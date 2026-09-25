@@ -8,6 +8,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OrderStatus {
+  pending
+  completed
+  cancelled
+}
+
 model Category {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name      String
@@ -35,6 +41,50 @@ model Product {
   categoryId String   @map("category_id") @db.Uuid
   category   Category @relation(fields: [categoryId], references: [id])
 
+  inventory Inventory?
+  orderItems OrderItem[]
+
   @@index([categoryId, position])
   @@map("products")
+}
+
+model Inventory {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  productId String   @unique @map("product_id") @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("inventories")
+}
+
+model Order {
+  id             String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  status         OrderStatus @default(pending)
+  customerName   String      @map("customer_name")
+  customerEmail  String      @map("customer_email")
+  total          Int
+  idempotencyKey String?     @unique @map("idempotency_key")
+  paidAt         DateTime?   @map("paid_at")
+  cardLast4      String?     @map("card_last4")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orderId   String  @map("order_id") @db.Uuid
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id") @db.Uuid
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int     @map("unit_price")
+
+  @@index([orderId])
+  @@map("order_items")
 }

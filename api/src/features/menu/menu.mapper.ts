@@ -1,4 +1,8 @@
-import type { Category, Product } from "../../../prisma/generated/client";
+import type {
+  Category,
+  Inventory,
+  Product,
+} from "../../../prisma/generated/client";
 import type { CategoryDTO, ProductCategoryDTO, ProductDTO } from "./menu.dto";
 
 const toCategoryDTO = (row: Category): CategoryDTO => ({
@@ -13,13 +17,19 @@ const toProductCategoryDTO = (row: Category): ProductCategoryDTO => ({
   name: row.name,
 });
 
-const toProductDTO = (row: Product & { category: Category }): ProductDTO => ({
+const toProductDTO = (
+  row: Product & {
+    category: Category;
+    inventory: Inventory | null;
+  },
+): ProductDTO => ({
   id: row.id,
   name: row.name,
   slug: row.slug,
   description: row.description,
   price: row.price,
   imageUrl: row.imageUrl,
+  inStock: row.inventory?.quantity ?? 0,
   category: toProductCategoryDTO(row.category),
 });
 

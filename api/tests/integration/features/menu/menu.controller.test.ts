@@ -306,6 +306,7 @@ describe("GET /menu/products/:id", () => {
       description: "Fried dough filled with shredded chicken.",
       price: 650,
       imageUrl: null,
+      inStock: 0,
       category: { slug: "fried-snacks", name: "Fried Snacks" },
     });
   });

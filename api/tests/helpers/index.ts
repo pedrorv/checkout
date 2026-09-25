@@ -2,6 +2,7 @@ import { prisma } from "../../src/shared/prisma";
 
 export * from "./expect";
 export * from "./menu";
+export * from "./orders";
 
 export const isIntegrationTest = process.env.TEST === "integration";
 export const isUnitTest = process.env.TEST === "unit";

@@ -47,6 +47,7 @@ export const menuSchemas = {
       "description",
       "price",
       "imageUrl",
+      "inStock",
       "category",
     ],
     properties: {
@@ -59,6 +60,10 @@ export const menuSchemas = {
         description: "Price in cents.",
       },
       imageUrl: { type: "string", nullable: true },
+      inStock: {
+        type: "integer",
+        description: "Units currently in stock.",
+      },
       category: schemaRef("ProductCategory"),
     },
   },

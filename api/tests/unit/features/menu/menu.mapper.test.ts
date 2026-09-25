@@ -9,6 +9,14 @@ const categoryRow = {
   updatedAt: new Date("2026-01-15T12:00:00.000Z"),
 };
 
+const inventoryRow = {
+  id: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4e",
+  productId: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4d",
+  quantity: 10,
+  createdAt: new Date("2026-01-15T12:00:00.000Z"),
+  updatedAt: new Date("2026-01-15T12:00:00.000Z"),
+};
+
 const productRow = {
   id: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4d",
   name: "Coxinha",
@@ -21,6 +29,7 @@ const productRow = {
   updatedAt: new Date("2026-01-15T12:00:00.000Z"),
   categoryId: categoryRow.id,
   category: categoryRow,
+  inventory: inventoryRow,
 };
 
 describe("menuMapper", () => {
@@ -55,6 +64,7 @@ describe("menuMapper", () => {
         description: "Fried dough filled with shredded chicken.",
         price: 650,
         imageUrl: null,
+        inStock: 10,
         category: { slug: "fried-snacks", name: "Fried Snacks" },
       });
     });
@@ -77,6 +87,15 @@ describe("menuMapper", () => {
 
       expect(dto.description).toBeNull();
       expect(dto.imageUrl).toBe("https://example.com/coxinha.jpg");
+    });
+
+    it("maps a missing inventory row to zero stock", () => {
+      const dto = menuMapper.toProductDTO({
+        ...productRow,
+        inventory: null,
+      });
+
+      expect(dto.inStock).toBe(0);
     });
   });
 });

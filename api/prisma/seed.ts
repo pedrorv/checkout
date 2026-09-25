@@ -1,5 +1,8 @@
 import { prisma } from "../src/shared/prisma";
 
+const DEFAULT_STOCK_QUANTITY = 10;
+const OUT_OF_STOCK_SLUGS = ["chocolate-brownie"];
+
 type CategorySeed = {
   name: string;
   slug: string;
@@ -149,7 +152,7 @@ const run = async () => {
     });
 
     for (const product of category.products) {
-      await prisma.product.upsert({
+      const createdProduct = await prisma.product.upsert({
         where: { slug: product.slug },
         create: {
           ...product,
@@ -163,6 +166,16 @@ const run = async () => {
           position: product.position,
           categoryId: created.id,
         },
+      });
+
+      const quantity = OUT_OF_STOCK_SLUGS.includes(product.slug)
+        ? 0
+        : DEFAULT_STOCK_QUANTITY;
+
+      await prisma.inventory.upsert({
+        where: { productId: createdProduct.id },
+        create: { productId: createdProduct.id, quantity },
+        update: { quantity },
       });
     }
   }

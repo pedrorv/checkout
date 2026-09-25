@@ -17,5 +17,6 @@ export type ProductDTO = {
   description: string | null;
   price: number;
   imageUrl: string | null;
+  inStock: number;
   category: ProductCategoryDTO;
 };

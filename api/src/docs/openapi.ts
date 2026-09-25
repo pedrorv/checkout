@@ -1,8 +1,9 @@
 import packageJson from "../../package.json";
 import { menuDocs } from "./features/menu";
+import { orderDocs } from "./features/orders";
 import { sharedDocs } from "./shared";
 
-const docGroups = [sharedDocs, menuDocs];
+const docGroups = [sharedDocs, menuDocs, orderDocs];
 
 const mergeDocGroup = <T extends keyof (typeof docGroups)[number]>(type: T) =>
   Object.assign({}, ...docGroups.map((group) => group[type]));

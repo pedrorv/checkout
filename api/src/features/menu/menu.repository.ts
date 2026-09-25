@@ -1,5 +1,6 @@
 import type {
   Category,
+  Inventory,
   Prisma,
   PrismaClient,
   Product,
@@ -15,7 +16,10 @@ type DbClient = Prisma.TransactionClient | PrismaClient;
 
 export type CategoryRow = Category;
 
-export type ProductRow = Product & { category: Category };
+export type ProductRow = Product & {
+  category: Category;
+  inventory: Inventory | null;
+};
 
 const positionCursorWhere = (cursor: MenuPositionCursor) => ({
   OR: [
@@ -88,7 +92,7 @@ const findProducts = async (
       where,
       orderBy,
       take: params.limit + 1,
-      include: { category: true },
+      include: { category: true, inventory: true },
     });
     const total = await client.product.count({ where: baseWhere });
 
@@ -113,7 +117,19 @@ const findProductById = async (
 
   return client.product.findUnique({
     where: { id: params.id },
-    include: { category: true },
+    include: { category: true, inventory: true },
+  });
+};
+
+const findProductsByIds = async (
+  params: { ids: string[] },
+  options?: RepositoryMethodOptions,
+): Promise<ProductRow[]> => {
+  const client = options?.client ?? prisma;
+
+  return client.product.findMany({
+    where: { id: { in: params.ids } },
+    include: { category: true, inventory: true },
   });
 };
 
@@ -122,4 +138,5 @@ export const menuRepository = {
   findCategoryBySlug,
   findProducts,
   findProductById,
+  findProductsByIds,
 };
