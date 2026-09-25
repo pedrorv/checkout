@@ -7,3 +7,34 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Category {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name      String
+  slug      String   @unique
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  price       Int
+  imageUrl    String?  @map("image_url")
+  position    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  categoryId String   @map("category_id") @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId, position])
+  @@map("products")
+}

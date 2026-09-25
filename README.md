@@ -33,6 +33,7 @@ Stop everything with `make down`.
 | `make up` | Start postgres, migrations, api, and web (dev compose) |
 | `make down` | Stop and remove the dev compose stack |
 | `make test` | Run api unit + integration tests in Docker (test compose) |
+| `make seed` | Seed the dev database with the snack bar menu |
 | `make migrate-create name=<migration>` | Create a new Prisma migration (test DB) |
 | `make migrate-dev` | Apply pending Prisma migrations (test DB) |
 | `make migrate-deploy` | Deploy migrations (test DB) |
@@ -53,9 +54,3 @@ Stop everything with `make down`.
 - [api/README.md](./api/README.md): API service overview and commands
 - [api/ARCHITECTURE.md](./api/ARCHITECTURE.md): API service architecture blueprint
 - [web/README.md](./web/README.md): web app overview
-
-## Scope
-
-This is a POC: no CI, no infra, no prod deploys. Naming uses `@checkout/*`
-with no env-var prefix, so spawning a real project from it is a
-search-and-replace on "checkout".

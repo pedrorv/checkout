@@ -13,6 +13,7 @@
     "migrate:create": "prisma migrate dev --create-only",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
     "test:unit": "TEST=unit jest --silent --detectOpenHandles ./tests/unit",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules TEST=integration jest --silent --detectOpenHandles ./tests/integration",
     "test": "npm run test:unit && npm run test:integration"
@@ -40,6 +41,7 @@
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "uuid": "11.1.0"
   }
 }

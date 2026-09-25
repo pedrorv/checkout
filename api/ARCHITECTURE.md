@@ -72,9 +72,8 @@ This gives the service a clear separation:
 
 ### `src/features/`
 
-Currently empty — this is the placeholder for the first feature folder. Each
-feature will own the modules needed for that domain rather than splitting the
-whole codebase by technical layer first.
+`menu/` is the first feature. Each feature owns the modules needed for that
+domain rather than splitting the whole codebase by technical layer first.
 
 ## Module Responsibilities
 
@@ -308,7 +307,7 @@ src/docs/
 ├── refs.ts             # $ref builders
 ├── utils.ts            # jsonContent / jsonResponse helpers
 ├── shared/             # base schemas and responses
-└── features/           # per-feature docs modules (first feature adds one)
+└── features/           # per-feature docs modules (menu/ is the first)
 ```
 
 A `DocsModule` groups the OpenAPI pieces a module owns:

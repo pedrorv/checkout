@@ -17,17 +17,21 @@ The current API surface includes:
 
 - `GET /health`: health check (defined in `src/infra/app.ts`)
 - `GET /docs`: Swagger UI for the OpenAPI document (development only)
-- no feature routes yet — `src/features/` is the placeholder for the first
-  feature
+- `GET /menu/categories`: list categories (position-ordered, cursor pagination)
+- `GET /menu/products`: list products, optional `category` slug filter
+- `GET /menu/products/:id`: get a product by id
+
+The first feature lives in `src/features/menu/` (see
+[ARCHITECTURE.md](./ARCHITECTURE.md) for the module layout it follows).
 
 ## Important Paths
 
 - `api/src/main.ts`: service bootstrap and lifecycle
 - `api/src/infra/`: app wiring, top-level router, middleware, startup dependencies
-- `api/src/features/`: feature-owned routes, controllers, services, repositories, validators, and related modules (currently empty)
+- `api/src/features/`: feature-owned routes, controllers, services, repositories, validators, and related modules (`menu/` is the first feature)
 - `api/src/shared/`: shared utilities, config, validation primitives, result types, and helpers
 - `api/src/docs/`: OpenAPI documentation modules
-- `api/prisma/`: schema and migrations
+- `api/prisma/`: schema, migrations, and seed script
 - `api/tests/`: unit and integration tests
 - [ARCHITECTURE.md](./ARCHITECTURE.md): detailed architecture blueprint for this service
 
@@ -73,6 +77,12 @@ database):
 make migrate-create name=your_migration_name
 make migrate-dev
 make migrate-deploy
+```
+
+To seed the dev database with the snack bar menu:
+
+```bash
+make seed
 ```
 
 ## Testing

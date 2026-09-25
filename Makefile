@@ -10,7 +10,7 @@ TARGET_ARGS := $(filter-out --,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGO
 
 TEST_LOG ?= /tmp/checkout-test-docker.log
 
-.PHONY: up down test migrate-create migrate-dev migrate-deploy
+.PHONY: up down test seed migrate-create migrate-dev migrate-deploy
 
 up:
 	@set -eu; \
@@ -19,6 +19,12 @@ up:
 down:
 	@set -eu; \
 	$(COMPOSE_DEV) down $(TARGET_ARGS)
+
+seed:
+	@set -eu; \
+	$(COMPOSE_DEV) up -d --wait postgres db-migrations; \
+	$(COMPOSE_DEV) build api; \
+	$(COMPOSE_DEV) run --rm api pnpm run seed
 
 test:
 	@set -e; \
