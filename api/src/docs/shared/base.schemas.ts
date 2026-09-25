@@ -7,8 +7,9 @@ export const baseSchemas = {
   },
   MessageResponse: {
     type: "object",
-    required: ["message"],
+    required: ["code", "message"],
     properties: {
+      code: { type: "string", description: "Machine-readable error code" },
       message: { type: "string" },
     },
   },
@@ -32,8 +33,12 @@ export const baseSchemas = {
   },
   ValidationError: {
     type: "object",
-    required: ["message", "error"],
+    required: ["code", "message", "error"],
     properties: {
+      code: {
+        type: "string",
+        example: "VALIDATION_ERROR",
+      },
       message: {
         type: "string",
         example: "Validation error",

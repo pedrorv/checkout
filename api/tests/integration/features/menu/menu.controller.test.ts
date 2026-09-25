@@ -1,6 +1,10 @@
 import httpStatus from "http-status";
 import request from "supertest";
 
+import {
+  MenuErrors,
+  MenuErrorsCodes,
+} from "../../../../src/features/menu/menu.errors";
 import { app } from "../../../../src/infra";
 import {
   expectValidationError,
@@ -96,7 +100,10 @@ describe("GET /menu/products", () => {
     const response = await listProducts().query({ category: "nope" });
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Category not found" });
+    expect(response.body).toEqual({
+      code: MenuErrorsCodes.CategoryNotFound,
+      message: MenuErrors.CategoryNotFound,
+    });
   });
 
   it("returns an empty list when no products exist", async () => {
@@ -317,7 +324,10 @@ describe("GET /menu/products/:id", () => {
     );
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Product not found" });
+    expect(response.body).toEqual({
+      code: MenuErrorsCodes.ProductNotFound,
+      message: MenuErrors.ProductNotFound,
+    });
   });
 
   it("returns 400 for a non-uuid id", async () => {

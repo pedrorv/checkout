@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { getHealth } from "../api/client";
+import { getHealth } from "../health.api";
 
-export default function Home() {
+export function HomeScreen() {
   const [status, setStatus] = useState<"loading" | "online" | "offline">(
     "loading",
   );
@@ -28,8 +28,8 @@ export default function Home() {
   }, []);
 
   return (
-    <main>
-      <h1>Checkout</h1>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <h1 className="text-3xl font-bold">Checkout</h1>
       <p>{status === "loading" ? "Checking API..." : `API: ${status}`}</p>
     </main>
   );

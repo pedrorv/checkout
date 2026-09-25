@@ -52,5 +52,12 @@ services:
       db-migrations:
         condition: service_completed_successfully
 
+  web-tests:
+    build:
+      context: .
+      dockerfile: web/Dockerfile.test
+    restart: "no"
+    command: ["pnpm", "run", "test"]
+
 volumes:
   pgdata-test:

@@ -1,8 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 
-import { AppRouter } from "./router";
+import { AppProviders, AppRouter } from "./app";
+import "./index.css";
 
 const rootElement = document.getElementById("root");
 
@@ -12,8 +12,8 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <AppProviders>
       <AppRouter />
-    </BrowserRouter>
+    </AppProviders>
   </React.StrictMode>,
 );

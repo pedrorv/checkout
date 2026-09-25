@@ -25,6 +25,7 @@ export const validateRequest =
 
     if (error) {
       return res.status(httpStatus.BAD_REQUEST).json({
+        code: "VALIDATION_ERROR",
         message: "Validation error",
         error,
       });

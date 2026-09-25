@@ -10,8 +10,9 @@ export const orderResponses = {
   OrderOk: jsonResponse("OK.", schemaRef("OrderResponse")),
   PaymentDeclined: jsonResponse("The card was declined.", {
     type: "object",
-    required: ["message"],
+    required: ["code", "message"],
     properties: {
+      code: { type: "string", example: "PAYMENT_DECLINED" },
       message: { type: "string", example: "The card was declined" },
     },
   }),

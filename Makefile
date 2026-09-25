@@ -30,9 +30,10 @@ test:
 	@set -e; \
 	cleanup() { $(COMPOSE_TEST) down >> $(TEST_LOG) 2>&1; }; \
 	trap cleanup EXIT; \
-	$(COMPOSE_TEST) build --quiet db-migrations tests >> $(TEST_LOG) 2>&1; \
+	$(COMPOSE_TEST) build --quiet db-migrations tests web-tests >> $(TEST_LOG) 2>&1; \
 	$(COMPOSE_TEST) up -d --wait db-migrations >> $(TEST_LOG) 2>&1; \
-	$(COMPOSE_TEST) --progress=quiet run --rm tests
+	$(COMPOSE_TEST) --progress=quiet run --rm tests; \
+	$(COMPOSE_TEST) --progress=quiet run --rm web-tests
 
 migrate-create:
 	@set -e; \

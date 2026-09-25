@@ -1,6 +1,4 @@
-import { env } from "../env";
-
-const BASE_URL = env.VITE_API_URL ?? "http://localhost:3000";
+import { BASE_URL } from "@/shared";
 
 export const getHealth = async (): Promise<string> => {
   const response = await fetch(`${BASE_URL}/health`);

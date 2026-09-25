@@ -10,6 +10,7 @@ export const expectValidationError = (params: {
   expect(response.status).toBe(httpStatus.BAD_REQUEST);
   expect(response.body).toEqual(
     expect.objectContaining({
+      code: "VALIDATION_ERROR",
       message: "Validation error",
       error: expect.objectContaining({
         details: expect.arrayContaining([

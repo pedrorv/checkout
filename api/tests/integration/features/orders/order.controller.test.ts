@@ -2,6 +2,10 @@ import httpStatus from "http-status";
 import request from "supertest";
 import { v4 as uuidv4 } from "uuid";
 
+import {
+  OrderErrors,
+  OrderErrorsCodes,
+} from "../../../../src/features/orders/order.errors";
 import { app } from "../../../../src/infra";
 import {
   expectValidationError,
@@ -148,7 +152,10 @@ describe("POST /orders", () => {
     const response = await createOrder(validCreatePayload([{ id: uuidv4() }]));
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Product not found" });
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.ProductNotFound,
+      message: OrderErrors.ProductNotFound,
+    });
     expect(await getStock(product.id)).toBe(10);
   });
 
@@ -163,7 +170,8 @@ describe("POST /orders", () => {
 
     expect(response.status).toBe(httpStatus.CONFLICT);
     expect(response.body).toEqual({
-      message: "Requested quantity exceeds the available stock",
+      code: OrderErrorsCodes.OutOfStock,
+      message: OrderErrors.OutOfStock,
     });
     expect(await getStock(product.id)).toBe(2);
   });
@@ -253,7 +261,10 @@ describe("GET /orders/:id", () => {
     const response = await request(app).get(`/orders/${uuidv4()}`);
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Order not found" });
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.OrderNotFound,
+      message: OrderErrors.OrderNotFound,
+    });
   });
 
   it("returns 400 for a non-uuid id", async () => {
@@ -324,7 +335,8 @@ describe("PATCH /orders/:id", () => {
 
     expect(response.status).toBe(httpStatus.CONFLICT);
     expect(response.body).toEqual({
-      message: "Requested quantity exceeds the available stock",
+      code: OrderErrorsCodes.OutOfStock,
+      message: OrderErrors.OutOfStock,
     });
     expect(await getStock(oldProduct.id)).toBe(5);
     expect(await getStock(newProduct.id)).toBe(1);
@@ -341,7 +353,10 @@ describe("PATCH /orders/:id", () => {
       .send({ items: [{ productId: uuidv4(), quantity: 1 }] });
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Product not found" });
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.ProductNotFound,
+      message: OrderErrors.ProductNotFound,
+    });
     expect(await getStock(oldProduct.id)).toBe(5);
   });
 
@@ -395,7 +410,8 @@ describe("PATCH /orders/:id", () => {
 
     expect(response.status).toBe(httpStatus.CONFLICT);
     expect(response.body).toEqual({
-      message: "Only pending orders can be modified or cancelled",
+      code: OrderErrorsCodes.OrderNotPending,
+      message: OrderErrors.OrderNotPending,
     });
   });
 
@@ -454,7 +470,10 @@ describe("POST /orders/:id/cancel", () => {
     const response = await request(app).post(`/orders/${uuidv4()}/cancel`);
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
-    expect(response.body).toEqual({ message: "Order not found" });
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.OrderNotFound,
+      message: OrderErrors.OrderNotFound,
+    });
   });
 
   it("restores stock exactly once on concurrent cancels", async () => {
@@ -531,7 +550,10 @@ describe("POST /orders/:id/pay", () => {
       });
 
     expect(response.status).toBe(httpStatus.PAYMENT_REQUIRED);
-    expect(response.body).toEqual({ message: "The card was declined" });
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.PaymentDeclined,
+      message: OrderErrors.PaymentDeclined,
+    });
 
     const recheck = await request(app).get(`/orders/${order.id}`);
     expect(recheck.body.status).toBe("pending");

@@ -187,8 +187,16 @@ This service validates requests before entering business logic. Controllers assu
 Purpose:
 
 - centralize user-facing error messages for a feature
+- define the feature's public error codes (`*ErrorsCodes`, UPPERCASE strings
+  like `OUT_OF_STOCK`) that controllers send in error bodies
 
-This keeps response text consistent and avoids scattering literal strings across controllers.
+Every error response has the shape `{ code, message }`: `code` is the
+machine-readable `*ErrorsCodes` value clients branch on; `message` is the
+human-readable text clients display. Keep codes stable — rewording a message
+is safe, renaming a code is a breaking change.
+
+This keeps response text and wire codes consistent and avoids scattering
+literal strings across controllers.
 
 ### `*.result-kinds.ts`
 

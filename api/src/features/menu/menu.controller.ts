@@ -1,7 +1,7 @@
 import httpStatus from "http-status";
 
 import { actionMethod, SharedResultKinds } from "../../shared";
-import { MenuErrors } from "./menu.errors";
+import { MenuErrors, MenuErrorsCodes } from "./menu.errors";
 import { MenuResultKinds } from "./menu.result-kinds";
 import { menuService } from "./menu.service";
 
@@ -29,9 +29,10 @@ const listProducts = actionMethod(async (_req, res) => {
     case SharedResultKinds.Success:
       return res.status(httpStatus.OK).json(result.data);
     case MenuResultKinds.CategoryNotFound:
-      return res
-        .status(httpStatus.NOT_FOUND)
-        .json({ message: MenuErrors.CategoryNotFound });
+      return res.status(httpStatus.NOT_FOUND).json({
+        code: MenuErrorsCodes.CategoryNotFound,
+        message: MenuErrors.CategoryNotFound,
+      });
   }
 });
 
@@ -44,9 +45,10 @@ const getProduct = actionMethod(async (_req, res) => {
     case SharedResultKinds.Success:
       return res.status(httpStatus.OK).json(result.data);
     case MenuResultKinds.ProductNotFound:
-      return res
-        .status(httpStatus.NOT_FOUND)
-        .json({ message: MenuErrors.ProductNotFound });
+      return res.status(httpStatus.NOT_FOUND).json({
+        code: MenuErrorsCodes.ProductNotFound,
+        message: MenuErrors.ProductNotFound,
+      });
   }
 });
 
