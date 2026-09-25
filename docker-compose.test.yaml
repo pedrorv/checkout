@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: checkout-test-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-checkout}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-checkout}
+      POSTGRES_DB: ${POSTGRES_DB:-checkout-test}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - pgdata-test:/var/lib/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-checkout} -d ${POSTGRES_DB:-checkout-test}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-migrations:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: "no"
+    env_file:
+      - .env.test
+    command: ["pnpm", "run", "migrate:dev"]
+    volumes:
+      - ./api/prisma:/app/api/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  tests:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: "no"
+    env_file:
+      - .env.test
+    command: ["pnpm", "run", "test"]
+    volumes:
+      - ./api/src:/app/api/src
+      - ./api/tests:/app/api/tests
+      - ./api/prisma:/app/api/prisma
+      - ./api/jest.config.ts:/app/api/jest.config.ts
+    depends_on:
+      db-migrations:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata-test:

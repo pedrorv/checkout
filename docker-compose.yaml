@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: checkout-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-checkout}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-checkout}
+      POSTGRES_DB: ${POSTGRES_DB:-checkout}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-checkout} -d ${POSTGRES_DB:-checkout}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-migrations:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: "no"
+    env_file:
+      - .env.dev
+    command: ["pnpm", "run", "migrate:dev"]
+    volumes:
+      - ./api/prisma:/app/api/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - ./api/src:/app/api/src
+      - ./api/prisma:/app/api/prisma
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    volumes:
+      - ./web/src:/app/web/src
+      - ./web/index.html:/app/web/index.html
+      - ./web/vite.config.ts:/app/web/vite.config.ts
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:

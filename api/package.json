@@ -1,0 +1,45 @@
+{
+  "name": "@checkout/api",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "npm run prisma:generate && npm run esbuild",
+    "esbuild": "esbuild src/main.ts --bundle --platform=node --outfile=dist/main.js --packages=external",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "postinstall": "npm run prisma:generate",
+    "prisma:generate": "prisma generate",
+    "migrate:create": "prisma migrate dev --create-only",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "test:unit": "TEST=unit jest --silent --detectOpenHandles ./tests/unit",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules TEST=integration jest --silent --detectOpenHandles ./tests/integration",
+    "test": "npm run test:unit && npm run test:integration"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "http-status": "^2.1.0",
+    "joi": "^18.0.2",
+    "pg": "^8.13.0",
+    "prisma": "^7.0.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "esbuild": "^0.27.3",
+    "jest": "^29.7.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": ["ES2019", "DOM"],
+    "module": "ESNext",
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "types": ["react", "react-dom", "vite/client"]
+  },
+  "include": ["src/**/*"]
+}

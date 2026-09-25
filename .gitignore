@@ -1,0 +1,65 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependency directories
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.serve
+**/generated/
+
+# Vite / bundlers
+.vite/
+.cache/
+.parcel-cache/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+coverage/
+.nyc_output/
+
+# Runtime env files (ignore all, but keep tracked dev/test envs and examples)
+.env
+.env.*.local
+.env.local
+.env.staging
+.env.production
+!.env.example
+!.env.dev
+!.env.test
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+
+# Misc
+*.pid
+*.seed
+*.gz
+email-previews/
+
+# OS files
+Thumbs.db
