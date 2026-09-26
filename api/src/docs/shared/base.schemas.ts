@@ -25,10 +25,6 @@ export const baseSchemas = {
         },
       },
       type: { type: "string" },
-      context: {
-        type: "object",
-        additionalProperties: true,
-      },
     },
   },
   ValidationError: {

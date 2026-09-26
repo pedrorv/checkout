@@ -1,60 +1,58 @@
-import Joi from "joi";
+import { z } from "zod";
 
-import type { RequestValidationSchema } from "../../shared";
+import { createCursorSchema } from "../../shared";
 import { menuIdCursorCodec, menuPositionCursorCodec } from "./menu.cursor";
 
-const createCursorSchema = <T>(params: {
-  decode: (cursor: string) => T;
-  message: string;
-}) =>
-  Joi.string()
-    .base64()
-    .custom((value, helpers) => {
-      try {
-        return params.decode(value);
-      } catch {
-        return helpers.error("cursor.invalid");
-      }
-    })
-    .messages({
-      "cursor.invalid": params.message,
-    })
-    .optional();
+const limitSchema = z.coerce.number().int().min(1).max(100).default(20);
 
-const positionCursorSchema = createCursorSchema({
-  decode: (cursor) => menuPositionCursorCodec.decode(cursor),
-  message: '"cursor" must be a valid position cursor',
-});
+const positionCursorSchema = createCursorSchema(
+  menuPositionCursorCodec,
+  '"cursor" must be a valid position cursor',
+);
 
-const idCursorSchema = createCursorSchema({
-  decode: (cursor) => menuIdCursorCodec.decode(cursor),
-  message: '"cursor" must be a valid id cursor',
-});
+const idCursorSchema = createCursorSchema(
+  menuIdCursorCodec,
+  '"cursor" must be a valid id cursor',
+);
 
-const limitSchema = Joi.number().integer().min(1).max(100).default(20);
-
-const listCategories: RequestValidationSchema = {
-  query: Joi.object({
+const listCategories = {
+  query: z.object({
     cursor: positionCursorSchema,
     limit: limitSchema,
   }),
 };
 
-const listProducts: RequestValidationSchema = {
-  query: Joi.object({
-    category: Joi.string(),
-    cursor: Joi.alternatives().conditional("category", {
-      is: Joi.exist(),
-      then: positionCursorSchema,
-      otherwise: idCursorSchema,
+const listProducts = {
+  query: z
+    .object({
+      category: z.string().optional(),
+      cursor: z.string().optional(),
+      limit: limitSchema,
+    })
+    .transform((value, ctx) => {
+      if (value.cursor === undefined) {
+        return { ...value, cursor: undefined };
+      }
+
+      const cursorSchema =
+        value.category !== undefined ? positionCursorSchema : idCursorSchema;
+
+      const result = cursorSchema.safeParse(value.cursor);
+
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({ ...issue, path: ["cursor"] });
+        }
+        return { ...value, cursor: undefined };
+      }
+
+      return { ...value, cursor: result.data };
     }),
-    limit: limitSchema,
-  }),
 };
 
-const getProduct: RequestValidationSchema = {
-  params: Joi.object({
-    id: Joi.string().uuid().required(),
+const getProduct = {
+  params: z.object({
+    id: z.uuid(),
   }),
 };
 

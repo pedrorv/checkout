@@ -28,7 +28,7 @@ Features live in `src/features/`: `menu/` (browsing) and `orders/` (order lifecy
 ## Important Paths
 
 - `api/src/main.ts`: service bootstrap and lifecycle
-- `api/src/infra/`: app wiring, top-level router, middleware, startup dependencies
+- `api/src/infra/`: app wiring, top-level router, startup dependencies
 - `api/src/features/`: feature-owned routes, controllers, services, repositories, validators, and related modules (`menu/` and `orders/`)
 - `api/src/shared/`: shared utilities, config, validation primitives, result types, and helpers
 - `api/src/docs/`: OpenAPI documentation modules

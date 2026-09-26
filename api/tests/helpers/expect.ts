@@ -4,8 +4,9 @@ import type request from "supertest";
 export const expectValidationError = (params: {
   response: request.Response;
   message: string;
+  path?: (string | number)[];
 }) => {
-  const { response, message } = params;
+  const { response, message, path } = params;
 
   expect(response.status).toBe(httpStatus.BAD_REQUEST);
   expect(response.body).toEqual(
@@ -16,6 +17,7 @@ export const expectValidationError = (params: {
         details: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(message),
+            ...(path ? { path } : {}),
           }),
         ]),
       }),

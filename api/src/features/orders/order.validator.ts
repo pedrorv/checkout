@@ -1,14 +1,12 @@
-import Joi from "joi";
+import { z } from "zod";
 
-import type { RequestValidationSchema } from "../../shared";
-
-const idempotencyKeyHeader = Joi.object({
-  "idempotency-key": Joi.string().uuid({ version: "uuidv4" }).required(),
+const idempotencyKeyHeader = z.object({
+  "idempotency-key": z.uuidv4(),
 });
 
-const orderItemSchema = Joi.object({
-  productId: Joi.string().uuid().required(),
-  quantity: Joi.number().integer().min(1).max(100).required(),
+const orderItemSchema = z.object({
+  productId: z.uuid(),
+  quantity: z.number().int().min(1).max(100),
 });
 
 const mergeItems = (items: Array<{ productId: string; quantity: number }>) => {
@@ -27,40 +25,43 @@ const mergeItems = (items: Array<{ productId: string; quantity: number }>) => {
   }));
 };
 
-const createOrder: RequestValidationSchema = {
+const createOrder = {
   headers: idempotencyKeyHeader,
-  body: Joi.object({
-    customerName: Joi.string().max(255).optional().default(""),
-    customerEmail: Joi.string().email().max(255).optional().default(""),
-    items: Joi.array().items(orderItemSchema).min(1).max(50).required(),
-  }).custom((value) => ({
-    ...value,
-    items: mergeItems(value.items),
-  })),
+  body: z
+    .object({
+      customerName: z.string().max(255).default(""),
+      customerEmail: z.email().max(255).default(""),
+      items: z.array(orderItemSchema).min(1).max(50),
+    })
+    .transform((value) => ({
+      ...value,
+      items: mergeItems(value.items),
+    })),
 };
 
-const orderIdParam: RequestValidationSchema = {
-  params: Joi.object({
-    id: Joi.string().uuid().required(),
+const orderIdParam = {
+  params: z.object({
+    id: z.uuid(),
   }),
 };
 
-const updateOrder: RequestValidationSchema = {
-  params: Joi.object({
-    id: Joi.string().uuid().required(),
+const updateOrder = {
+  params: z.object({
+    id: z.uuid(),
   }),
-  body: Joi.object({
-    customerName: Joi.string().min(1).max(255),
-    customerEmail: Joi.string().email().max(255),
-    items: Joi.array().items(orderItemSchema).min(1).max(50),
-  })
-    .min(1)
-    .custom((value) =>
+  body: z
+    .object({
+      customerName: z.string().min(1).max(255).optional(),
+      customerEmail: z.email().max(255).optional(),
+      items: z.array(orderItemSchema).min(1).max(50).optional(),
+    })
+    .refine((value) => Object.keys(value).length > 0)
+    .transform((value) =>
       value.items ? { ...value, items: mergeItems(value.items) } : value,
     ),
 };
 
-const cancelOrder: RequestValidationSchema = orderIdParam;
+const cancelOrder = orderIdParam;
 
 const luhnValid = (digits: string) => {
   let sum = 0;
@@ -83,25 +84,27 @@ const luhnValid = (digits: string) => {
   return sum % 10 === 0;
 };
 
-const cardNumberSchema = Joi.string()
-  .required()
-  .custom((value: string, helpers) => {
+const cardNumberSchema = z
+  .string()
+  .superRefine((value, ctx) => {
     const digits = value.replace(/[\s-]/g, "");
 
     if (!/^\d{13,19}$/.test(digits)) {
-      return helpers.error("card.number.format");
+      ctx.addIssue({
+        code: "custom",
+        message: '"card.number" must be 13-19 digits',
+      });
+      return;
     }
 
     if (!luhnValid(digits)) {
-      return helpers.error("card.number.luhn");
+      ctx.addIssue({
+        code: "custom",
+        message: '"card.number" is not a valid card number',
+      });
     }
-
-    return digits;
   })
-  .messages({
-    "card.number.format": '"card.number" must be 13-19 digits',
-    "card.number.luhn": '"card.number" is not a valid card number',
-  });
+  .transform((value) => value.replace(/[\s-]/g, ""));
 
 const isFutureExpiry = (expMonth: number, expYear: number) => {
   const now = new Date();
@@ -119,29 +122,25 @@ const isFutureExpiry = (expMonth: number, expYear: number) => {
   return true;
 };
 
-const payOrder: RequestValidationSchema = {
-  params: Joi.object({
-    id: Joi.string().uuid().required(),
+const payOrder = {
+  params: z.object({
+    id: z.uuid(),
   }),
-  body: Joi.object({
-    card: Joi.object({
-      number: cardNumberSchema,
-      expMonth: Joi.number().integer().min(1).max(12).required(),
-      expYear: Joi.number().integer().min(1000).max(2100).required(),
-      cvc: Joi.string()
-        .pattern(/^\d{3,4}$/)
-        .required(),
-    })
-      .required()
-      .custom((value, helpers) => {
-        if (!isFutureExpiry(value.expMonth, value.expYear)) {
-          return helpers.error("card.expiry.past");
-        }
-
-        return value;
+  body: z.object({
+    card: z
+      .object({
+        number: cardNumberSchema,
+        expMonth: z.number().int().min(1).max(12),
+        expYear: z.number().int().min(1000).max(2100),
+        cvc: z.string().regex(/^\d{3,4}$/),
       })
-      .messages({
-        "card.expiry.past": '"card" must not be expired',
+      .superRefine((value, ctx) => {
+        if (!isFutureExpiry(value.expMonth, value.expYear)) {
+          ctx.addIssue({
+            code: "custom",
+            message: '"card" must not be expired',
+          });
+        }
       }),
   }),
 };

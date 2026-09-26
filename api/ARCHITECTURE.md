@@ -37,18 +37,16 @@ The dominant request flow in this service is:
 1. `src/main.ts` starts the app and runtime dependencies (migrations, Prisma)
 2. `src/infra/app.ts` registers global middleware, health endpoints, docs routes, and the HTTP router
 3. `src/infra/http/router.ts` mounts feature routers under top-level paths
-4. A feature `*.routes.ts` file declares the endpoint and middleware chain
-5. Middleware validates input and, when needed, authenticates the caller
-6. A feature `*.controller.ts` reads validated input and auth context
-7. A feature `*.service.ts` executes business rules and orchestration
-8. A feature `*.repository.ts` or feature-scoped adapter service performs data access or external IO
-9. The controller converts the service result into the HTTP response
+4. A feature `*.routes.ts` file declares the endpoint and attaches the controller handler
+5. A feature `*.controller.ts` validates input via `withValidation` and receives typed validated values
+6. A feature `*.service.ts` executes business rules and orchestration
+7. A feature `*.repository.ts` or feature-scoped adapter service performs data access or external IO
+8. The controller converts the service result into the HTTP response
 
 This gives the service a clear separation:
 
 - routes define exposure
-- middleware enforces request-level rules
-- controllers adapt HTTP to application logic
+- controllers validate input and adapt HTTP to application logic
 - services own business decisions
 - repositories and adapters own persistence or external integration details
 
@@ -104,7 +102,6 @@ Routes should stay thin and declarative. They should not contain business rules.
 Typical responsibilities:
 
 - create router instance
-- register `validateRequest(...)`
 - attach the correct controller function
 
 ### `*.controller.ts`
@@ -117,7 +114,7 @@ Purpose:
 
 Typical responsibilities:
 
-- read normalized input from `res.locals.validated`
+- read typed validated input from `withValidation`
 - call the corresponding feature service
 - map service result kinds to HTTP responses
 
@@ -254,8 +251,6 @@ Key responsibilities in this service:
   - mounts docs and HTTP routes
 - `http/router.ts`
   - registers top-level feature routers
-- `middlewares/`
-  - `validateRequest`: validate and normalize request input
 - `prisma-connection.ts` and `run-migrations.ts`
   - startup-time dependency initialization
 
@@ -272,10 +267,10 @@ Boundary rule:
 
 Current kinds of shared concerns include:
 
-- runtime config (`config.ts`, Joi-validated)
+- runtime config (`config.ts`, Zod-validated)
 - shared result types and result kinds
 - shared validation primitives (`validate.ts`, `RequestValidationSchema`)
-- generic utilities (`pick.ts`, `controller.ts` with `actionMethod`)
+- generic utilities (`controller.ts` with `withValidation`)
 - shared client access points (`prisma.ts` with the `PrismaPg` adapter)
 - repository primitives (`repository.ts` with `TransactionClient`)
 
@@ -354,7 +349,7 @@ Located under `tests/integration/`.
 Best suited for:
 
 - endpoint behavior
-- middleware interaction
+- request validation behavior
 - controller and service integration
 - persistence-backed feature flows
 
@@ -472,8 +467,7 @@ The most important rule to preserve is responsibility clarity:
 
 - `infra` assembles
 - `routes` expose
-- `middleware` guards and normalizes
-- `controllers` adapt HTTP
+- `controllers` validate input and adapt HTTP
 - `services` decide
 - `repositories` and adapters talk to outside systems
 - `shared` supports cross-feature reuse

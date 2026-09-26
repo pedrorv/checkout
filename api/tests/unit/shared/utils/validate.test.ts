@@ -1,12 +1,12 @@
-import Joi from "joi";
+import { z } from "zod";
 
 import { validateSchema } from "../../../../src/shared/utils/validate";
 
 describe("validateSchema", () => {
   const schema = {
-    body: Joi.object({
-      name: Joi.string().required(),
-      age: Joi.number().integer().min(0),
+    body: z.object({
+      name: z.string(),
+      age: z.number().int().min(0).optional(),
     }),
   };
 
@@ -36,7 +36,7 @@ describe("validateSchema", () => {
     expect(error).toBeDefined();
   });
 
-  it("should collect all errors when abortEarly is false", () => {
+  it("should collect all errors when issues span multiple keys", () => {
     const { error } = validateSchema(schema, {
       body: { age: -1 },
     });
@@ -45,8 +45,8 @@ describe("validateSchema", () => {
     expect(error?.details).toHaveLength(2);
     expect(error?.details.map((detail) => detail.message)).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('"name" is required'),
-        expect.stringContaining('"age" must be greater than or equal to 0'),
+        expect.stringContaining("expected string"),
+        expect.stringContaining(">=0"),
       ]),
     );
   });

@@ -229,7 +229,8 @@ describe("POST /orders", () => {
 
     expectValidationError({
       response,
-      message: '"idempotency-key" is required',
+      message: "Invalid input: expected string, received undefined",
+      path: ["headers", "idempotency-key"],
     });
   });
 
@@ -240,7 +241,8 @@ describe("POST /orders", () => {
 
     expectValidationError({
       response,
-      message: '"idempotency-key" must be a valid GUID',
+      message: "Invalid UUID",
+      path: ["headers", "idempotency-key"],
     });
   });
 });
@@ -291,7 +293,8 @@ describe("GET /orders/:id", () => {
 
     expectValidationError({
       response,
-      message: '"id" must be a valid GUID',
+      message: "Invalid UUID",
+      path: ["params", "id"],
     });
   });
 });

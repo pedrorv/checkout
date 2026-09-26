@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type CursorPrimitiveCodec<T> = {
   encode: (value: T) => unknown;
   decode: (value: unknown) => T;
@@ -8,7 +10,7 @@ type CursorSpec<T extends Record<string, unknown>> = {
   codecs: { [K in keyof T]: CursorPrimitiveCodec<T[K]> };
 };
 
-type CursorCodec<T extends Record<string, unknown>> = {
+export type CursorCodec<T extends Record<string, unknown>> = {
   encode: (value: T) => string;
   decode: (cursor: string) => T;
 };
@@ -54,6 +56,26 @@ export const createCursorCodec = <T extends Record<string, unknown>>(
     }, {} as T);
   },
 });
+
+export const createCursorSchema = <T extends Record<string, unknown>>(
+  codec: CursorCodec<T>,
+  message: string,
+) =>
+  z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined) {
+        return undefined;
+      }
+
+      try {
+        return codec.decode(value);
+      } catch {
+        ctx.addIssue({ code: "custom", message });
+        return z.NEVER;
+      }
+    });
 
 export const uuidCodec: CursorPrimitiveCodec<string> = {
   encode: (value) => value,

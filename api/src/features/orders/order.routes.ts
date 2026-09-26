@@ -1,39 +1,17 @@
 import express, { type Router } from "express";
 
-import { validateRequest } from "../../infra/middlewares";
 import { orderController } from "./order.controller";
-import { orderValidator } from "./order.validator";
 
 const orderRouter: Router = express.Router();
 
-orderRouter.post(
-  "/",
-  validateRequest(orderValidator.createOrder),
-  orderController.createOrder,
-);
+orderRouter.post("/", orderController.createOrder);
 
-orderRouter.get(
-  "/:id",
-  validateRequest(orderValidator.orderIdParam),
-  orderController.getOrder,
-);
+orderRouter.get("/:id", orderController.getOrder);
 
-orderRouter.patch(
-  "/:id",
-  validateRequest(orderValidator.updateOrder),
-  orderController.updateOrder,
-);
+orderRouter.patch("/:id", orderController.updateOrder);
 
-orderRouter.post(
-  "/:id/cancel",
-  validateRequest(orderValidator.cancelOrder),
-  orderController.cancelOrder,
-);
+orderRouter.post("/:id/cancel", orderController.cancelOrder);
 
-orderRouter.post(
-  "/:id/pay",
-  validateRequest(orderValidator.payOrder),
-  orderController.payOrder,
-);
+orderRouter.post("/:id/pay", orderController.payOrder);
 
 export { orderRouter };

@@ -320,7 +320,7 @@ describe("GET /menu/products/:id", () => {
 
   it("returns 404 for an unknown id", async () => {
     const response = await request(app).get(
-      "/menu/products/018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+      "/menu/products/018f1b2c-3d4e-7f6a-8b8c-9d0e1f2a3b4c",
     );
 
     expect(response.status).toBe(httpStatus.NOT_FOUND);
@@ -335,7 +335,8 @@ describe("GET /menu/products/:id", () => {
 
     expectValidationError({
       response,
-      message: '"id" must be a valid GUID',
+      message: "Invalid UUID",
+      path: ["params", "id"],
     });
   });
 });

@@ -1,32 +1,31 @@
-import Joi from "joi";
+import { z } from "zod";
 
-const envVarsSchema = Joi.object()
-  .keys({
-    NODE_ENV: Joi.string()
-      .valid("production", "development", "test")
+const envVarsSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(["production", "development", "test"])
       .default("development"),
-    API_PORT: Joi.number().default(3000),
-    DATABASE_URL: Joi.string().required(),
-    WEB_ALLOWED_ORIGINS: Joi.string().allow(null, ""),
+    API_PORT: z.coerce.number().default(3000),
+    DATABASE_URL: z.string(),
+    WEB_ALLOWED_ORIGINS: z.string().optional(),
   })
-  .unknown();
+  .passthrough();
 
-const { value: envVars, error } = envVarsSchema
-  .prefs({ errors: { label: "key" } })
-  .validate(process.env);
+const parsed = envVarsSchema.safeParse(process.env);
 
-if (error) {
-  throw new Error(`Config validation error: ${error.message}`);
+if (!parsed.success) {
+  throw new Error(`Config validation error: ${parsed.error.issues[0].message}`);
 }
 
+const envVars = parsed.data;
+
 export const config = {
-  env: envVars.NODE_ENV as string,
+  env: envVars.NODE_ENV,
   docsEnabled: envVars.NODE_ENV === "development",
-  port: envVars.API_PORT as number,
-  databaseUrl: envVars.DATABASE_URL as string,
+  port: envVars.API_PORT,
+  databaseUrl: envVars.DATABASE_URL,
   webAllowedOrigins:
-    (envVars.WEB_ALLOWED_ORIGINS as string | undefined)
-      ?.split(",")
+    envVars.WEB_ALLOWED_ORIGINS?.split(",")
       .map((origin) => origin.trim())
       .filter(Boolean) ?? [],
 };
