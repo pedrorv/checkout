@@ -5,6 +5,7 @@ import { Badge, Card, formatPrice } from "@/shared";
 import type { ProductDTO } from "../menu.types";
 import { ProductCartControls } from "./ProductCartControls";
 import { ProductDetailDialog } from "./ProductDetailDialog";
+import { ProductImage } from "./ProductImage";
 
 type ProductCardProps = {
   product: ProductDTO;
@@ -21,7 +22,11 @@ export function ProductCard({ product, quantityInCart }: ProductCardProps) {
         aria-label={`View details of ${product.name}`}
         onClick={() => setDetailOpen(true)}
       >
-        <div className="aspect-video w-full bg-muted" />
+        <ProductImage
+          name={product.name}
+          slug={product.slug}
+          imageUrl={product.imageUrl}
+        />
       </button>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center justify-between gap-2">

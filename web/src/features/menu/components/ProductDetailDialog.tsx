@@ -10,6 +10,7 @@ import {
 
 import type { ProductDTO } from "../menu.types";
 import { ProductCartControls } from "./ProductCartControls";
+import { ProductImage } from "./ProductImage";
 
 type ProductDetailDialogProps = {
   product: ProductDTO;
@@ -40,7 +41,12 @@ export function ProductDetailDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="aspect-video w-full rounded-md bg-muted" />
+          <ProductImage
+            name={product.name}
+            slug={product.slug}
+            imageUrl={product.imageUrl}
+            className="rounded-md"
+          />
 
           <p className="text-muted-foreground text-sm">{product.description}</p>
 

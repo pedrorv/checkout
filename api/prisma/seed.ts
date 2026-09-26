@@ -19,8 +19,8 @@ type CategorySeed = {
 
 const categories: CategorySeed[] = [
   {
-    name: "Fried Snacks",
-    slug: "fried-snacks",
+    name: "Snacks",
+    slug: "snacks",
     position: 1,
     products: [
       {
