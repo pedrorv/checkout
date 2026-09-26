@@ -1,7 +1,5 @@
 import type { PaginatedDTO } from "@/shared";
 
-export type MenuErrorCode = "CATEGORY_NOT_FOUND" | "PRODUCT_NOT_FOUND";
-
 export type CategoryDTO = {
   id: string;
   name: string;

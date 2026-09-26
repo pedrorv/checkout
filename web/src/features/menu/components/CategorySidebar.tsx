@@ -19,8 +19,9 @@ export function CategorySidebar({
         <button
           key={category.id}
           type="button"
+          aria-current={activeCategory === category.slug ? "true" : undefined}
           className={cn(
-            "rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent",
+            "rounded-md px-4 py-3 text-left text-base font-medium transition-colors hover:bg-accent",
             activeCategory === category.slug
               ? "bg-accent text-accent-foreground"
               : "text-muted-foreground",

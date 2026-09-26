@@ -53,6 +53,41 @@ const YEARS = Array.from({ length: 10 }, (_, index) =>
   String(new Date().getFullYear() + index),
 );
 
+const luhnValid = (digits: string) => {
+  let sum = 0;
+  let double = false;
+
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let value = Number(digits[index]);
+
+    if (double) {
+      value *= 2;
+      if (value > 9) {
+        value -= 9;
+      }
+    }
+
+    sum += value;
+    double = !double;
+  }
+
+  return sum % 10 === 0;
+};
+
+const isFutureExpiry = (expMonth: string, expYear: string) => {
+  const month = Number(expMonth);
+  const year = Number(expYear);
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = now.getUTCMonth() + 1;
+
+  if (year < currentYear) {
+    return false;
+  }
+
+  return year !== currentYear || month >= currentMonth;
+};
+
 export const maskCardNumber = (value: string) =>
   value
     .replace(/[\s-]/g, "")
@@ -75,16 +110,23 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
 
   const customerValid =
     customer.name.trim().length > 0 && /.+@.+\..+/.test(customer.email.trim());
+  const cardDigits = card.number.replace(/\s/g, "");
   const cardValid =
-    card.number.replace(/\s/g, "").length >= 13 &&
+    cardDigits.length >= 13 &&
+    cardDigits.length <= 19 &&
+    luhnValid(cardDigits) &&
     card.expMonth !== "" &&
     card.expYear !== "" &&
+    isFutureExpiry(card.expMonth, card.expYear) &&
     /^\d{3,4}$/.test(card.cvc);
 
-  const closeDialog = () => {
-    setStep(1);
-    setCard(initialCard);
-    onOpenChange(false);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setStep(1);
+      setCard(initialCard);
+    }
+
+    onOpenChange(next);
   };
 
   const handleCustomerStep = () => {
@@ -96,7 +138,8 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
       },
       {
         onSuccess: () => setStep(2),
-        onError: (error) => toast.error(getOrderErrorMessage(error)),
+        onError: (error) =>
+          toast.error(getOrderErrorMessage(error, "customer")),
       },
     );
   };
@@ -115,16 +158,16 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
       {
         onSuccess: (completed) => {
           clearActiveOrder();
-          closeDialog();
+          onOpenChange(false);
           navigate(`/orders/${completed.id}`);
         },
-        onError: (error) => toast.error(getOrderErrorMessage(error)),
+        onError: (error) => toast.error(getOrderErrorMessage(error, "card")),
       },
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{step === 1 ? "Your details" : "Payment"}</DialogTitle>
@@ -192,15 +235,6 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
               handlePay();
             }}
           >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="card-holder">Cardholder name</Label>
-              <Input
-                id="card-holder"
-                placeholder="Name on card"
-                maxLength={255}
-                autoComplete="cc-name"
-              />
-            </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="card-number">Card number</Label>
               <Input
@@ -283,10 +317,6 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
                 />
               </div>
             </div>
-            <p className="text-muted-foreground text-xs">
-              Test cards: 4242 4242 4242 4242 is approved, 4000 0000 0000 0002
-              is declined.
-            </p>
             <div className="flex gap-2">
               <Button
                 type="button"

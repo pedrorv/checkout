@@ -2,7 +2,7 @@ import { ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Badge, Button } from "../ui";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 type AppHeaderProps = {
   cartCount: number;

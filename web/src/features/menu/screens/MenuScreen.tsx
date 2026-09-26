@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useActiveOrder } from "@/features/orders";
-import { AppHeader, Skeleton } from "@/shared";
+import { AppHeader, Button, Skeleton } from "@/shared";
 
 import { CategorySidebar } from "../components/CategorySidebar";
 import { ProductCard } from "../components/ProductCard";
@@ -47,9 +47,24 @@ export function MenuScreen() {
               ))}
             </div>
           ) : categories.isError ? (
-            <p className="text-muted-foreground text-sm">
-              Could not load categories.
-            </p>
+            <div className="flex w-full shrink-0 flex-col items-start gap-3 py-4 md:w-56">
+              <p className="text-muted-foreground text-sm">
+                Could not load the menu.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => categories.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : (categories.data?.data ?? []).length === 0 ? (
+            <div className="flex w-full shrink-0 flex-col gap-3 py-4 md:w-56">
+              <p className="text-muted-foreground text-sm">
+                The menu isn't available right now.
+              </p>
+            </div>
           ) : (
             <CategorySidebar
               categories={categories.data?.data ?? []}
@@ -63,11 +78,17 @@ export function MenuScreen() {
               {activeCategoryName ?? "Menu"}
             </h1>
             {activeCategorySlug === null ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {["a", "b", "c", "d", "e", "f"].map((key) => (
-                  <Skeleton key={key} className="h-64 w-full" />
-                ))}
-              </div>
+              (categories.data?.data ?? []).length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  There is nothing to order at the moment.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {["a", "b", "c", "d", "e", "f"].map((key) => (
+                    <Skeleton key={key} className="h-64 w-full" />
+                  ))}
+                </div>
+              )
             ) : products.isLoading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {["a", "b", "c", "d", "e", "f"].map((key) => (
@@ -75,8 +96,21 @@ export function MenuScreen() {
                 ))}
               </div>
             ) : products.isError ? (
+              <div className="flex flex-col items-start gap-3 py-4">
+                <p className="text-muted-foreground text-sm">
+                  Could not load products.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => products.refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (products.data?.data ?? []).length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                Could not load products.
+                Nothing in this category right now.
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -76,6 +76,21 @@ describe("ProductCard", () => {
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
+  it("keeps decrease enabled and increase disabled when the cart already holds all stock", () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ProductCard product={{ ...product, inStock: 0 }} quantityInCart={2} />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Increase quantity of Coxinha" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Decrease quantity of Coxinha" }),
+    ).toBeEnabled();
+  });
+
   it("opens the details dialog with the full description from the title", async () => {
     const user = userEvent.setup();
     renderCard(0);

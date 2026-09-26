@@ -1,4 +1,17 @@
-import { BASE_URL } from "../config";
+import { BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
+
+/**
+ * Error codes produced by this client (or interpreted from api responses),
+ * mirroring the api's `*ErrorsCodes` convention. Server-sent feature codes
+ * (e.g. `OUT_OF_STOCK`) live in each feature's `*.errors.ts`.
+ */
+export const ApiErrorCodes = {
+  NetworkError: "NETWORK_ERROR",
+  TimeoutError: "TIMEOUT_ERROR",
+  ValidationError: "VALIDATION_ERROR",
+} as const;
+
+export type ApiErrorCode = (typeof ApiErrorCodes)[keyof typeof ApiErrorCodes];
 
 export class ApiError extends Error {
   readonly status: number;
@@ -60,10 +73,10 @@ export const apiRequest = async <T>(
 ): Promise<T> => {
   const url = `${BASE_URL}${path}`;
 
-  let response: Response;
+  const { signal, done, timedOut } = withTimeout(options.signal);
 
   try {
-    response = await fetch(url, {
+    const response = await fetch(url, {
       method: options.method ?? "GET",
       headers: {
         ...options.headers,
@@ -71,30 +84,66 @@ export const apiRequest = async <T>(
       },
       body:
         options.body !== undefined ? JSON.stringify(options.body) : undefined,
-      signal: options.signal,
+      signal,
     });
-  } catch {
-    throw toNetworkError();
-  }
 
-  if (!response.ok) {
-    throw await toApiError(response);
-  }
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+    if (response.status === 204) {
+      return undefined as T;
+    }
 
-  return (await response.json()) as T;
+    return (await response.json()) as T;
+  } catch (error) {
+    // Errors thrown by toApiError are already normalized: pass them through.
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    if (timedOut()) {
+      throw new ApiError({
+        status: 0,
+        message: "The request timed out",
+        code: ApiErrorCodes.TimeoutError,
+      });
+    }
+
+    throw new ApiError({
+      status: 0,
+      message: "Network error",
+      code: ApiErrorCodes.NetworkError,
+    });
+  } finally {
+    done();
+  }
 };
 
 const jsonHeaders = {
   "content-type": "application/json",
 };
 
-const toNetworkError = (): ApiError =>
-  new ApiError({
-    status: 0,
-    message: "Network error",
-    code: "NETWORK_ERROR",
-  });
+/**
+ * Wraps the caller's abort signal with a request timeout. `timedOut()` is
+ * checked only if the fetch rejects: true means the timeout fired (not the
+ * caller aborting), so the failure is reported as `TIMEOUT_ERROR`.
+ */
+const withTimeout = (signal: AbortSignal | undefined) => {
+  const controller = new AbortController();
+
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  const abort = () => controller.abort();
+
+  signal?.addEventListener("abort", abort, { once: true });
+
+  return {
+    signal: controller.signal,
+    timedOut: () => !signal?.aborted && controller.signal.aborted,
+    done: () => {
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abort);
+    },
+  };
+};

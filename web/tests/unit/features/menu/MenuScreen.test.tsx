@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import { MenuScreen } from "@/features/menu/screens";
@@ -96,5 +97,97 @@ describe("MenuScreen", () => {
     expect(screen.getByRole("button", { name: "Drinks" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Snacks" })).toBeInTheDocument();
     expect(screen.queryByText("All products")).not.toBeInTheDocument();
+  });
+
+  it("offers a retry button when categories fail to load", async () => {
+    const user = userEvent.setup();
+
+    fetchMock.respondWithByPath({
+      "/menu/categories": () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ code: "INTERNAL_ERROR", message: "Boom" }),
+            {
+              status: 500,
+              headers: { "content-type": "application/json" },
+            },
+          ),
+        ),
+      "/menu/products": productsResponse,
+    });
+
+    renderScreen();
+
+    await waitFor(() => {
+      expect(screen.getByText("Could not load the menu.")).toBeInTheDocument();
+    });
+
+    fetchMock.respondWithByPath({
+      "/menu/categories": categoriesResponse,
+      "/menu/products": productsResponse,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Snacks" }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("offers a retry button when products fail to load", async () => {
+    const user = userEvent.setup();
+
+    fetchMock.respondWithByPath({
+      "/menu/categories": categoriesResponse,
+      "/menu/products": () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ code: "INTERNAL_ERROR", message: "Boom" }),
+            {
+              status: 500,
+              headers: { "content-type": "application/json" },
+            },
+          ),
+        ),
+    });
+
+    renderScreen();
+
+    await waitFor(() => {
+      expect(screen.getByText("Could not load products.")).toBeInTheDocument();
+    });
+
+    fetchMock.respondWithByPath({
+      "/menu/categories": categoriesResponse,
+      "/menu/products": productsResponse,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Crisps")).toBeInTheDocument();
+    });
+  });
+
+  it("renders an empty-menu notice instead of a permanent skeleton when there are no categories", async () => {
+    fetchMock.respondWithByPath({
+      "/menu/categories": jsonResponse({
+        data: [],
+        nextCursor: null,
+        limit: 100,
+        total: 0,
+      }),
+      "/menu/products": productsResponse,
+    });
+
+    renderScreen();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("The menu isn't available right now."),
+      ).toBeInTheDocument();
+    });
   });
 });

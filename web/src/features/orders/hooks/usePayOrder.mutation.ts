@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiRequest } from "@/shared";
-
+import { ApiError, apiRequest } from "@/shared";
+import { OrderErrorCodes } from "../orders.errors";
+import { useOrderStore } from "../orders.store";
 import type { OrderDTO, PayOrderPayload } from "../orders.types";
 import { getUseGetOrderKey } from "./useGetOrder.query";
 
@@ -21,6 +22,14 @@ export const usePayOrder = () => {
       }),
     onSuccess: (order) => {
       queryClient.setQueryData(getUseGetOrderKey({ id: order.id }), order);
+    },
+    onError: (error, variables) => {
+      if (
+        error instanceof ApiError &&
+        error.code === OrderErrorCodes.OrderNotFound
+      ) {
+        useOrderStore.getState().clearIfActive({ id: variables.id });
+      }
     },
   });
 };

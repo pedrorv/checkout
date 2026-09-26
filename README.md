@@ -38,6 +38,16 @@ Stop everything with `make down`.
 | `pnpm lint` | Biome check with auto-fix (whole project) |
 | `pnpm format` | Biome format with auto-fix (whole project) |
 
+## How to manually test a payment flow
+
+Payments are processed by a mock card service — nothing is ever charged. A paid order stores only `paidAt` and the card's last four digits. The full API contract lives in Swagger at http://localhost:3000/docs.
+
+To exercise the payment flow in the web UI (`/cart` → Pay):
+
+- Approved: use any Luhn-valid, non-expired card — for example number `4242 4242 4242 4242`, any future expiry, CVC `123`. The order completes and the confirmation screen appears.
+- Declined: use number `4000 0000 0000 0002` (Luhn-valid, but the mock processor rejects it). A "card was declined" toast appears, the order stays pending, and you can retry with another card.
+- Rejected before charging: a Luhn-invalid number (e.g. `4242 4242 4242 4241`), a past expiry date, or a malformed CVC are refused by validation (client- and server-side) and never reach the mock processor.
+
 ## Testing notes
 
 - api unit tests (`api/tests/unit/`) need no database — they cover validators and pure helpers.

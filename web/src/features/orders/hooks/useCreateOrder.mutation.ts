@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 
 import { getUseListProductsKey } from "@/features/menu";
-import { ApiError, apiRequest } from "@/shared";
+import { ApiError, ApiErrorCodes, apiRequest } from "@/shared";
 
 import type { CreateOrderPayload, OrderDTO } from "../orders.types";
 import { getUseGetOrderKey } from "./useGetOrder.query";
@@ -11,8 +11,13 @@ export type UseCreateOrderParams = CreateOrderPayload;
 
 export const getUseCreateOrderKey = () => ["orders", "create"] as const;
 
+// A network error or a timeout is ambiguous: the request may have reached
+// the server and created the order. Keep the key so a human retry replays
+// the server's existing order instead of double-creating one.
 const isAmbiguousFailure = (error: unknown) =>
-  error instanceof ApiError && error.code === "NETWORK_ERROR";
+  error instanceof ApiError &&
+  (error.code === ApiErrorCodes.NetworkError ||
+    error.code === ApiErrorCodes.TimeoutError);
 
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();

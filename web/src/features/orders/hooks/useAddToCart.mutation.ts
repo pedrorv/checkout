@@ -4,8 +4,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { getUseListProductsKey } from "@/features/menu";
 import { ApiError } from "@/shared";
-
+import { OrderErrorCodes } from "../orders.errors";
 import { useOrderStore } from "../orders.store";
 import type { OrderDTO, OrderItemDTO } from "../orders.types";
 import { useCancelOrder } from "./useCancelOrder.mutation";
@@ -66,7 +67,7 @@ export const useAddToCart = () => {
           )
         : undefined;
 
-      if (activeOrderId && cachedOrder) {
+      if (activeOrderId && cachedOrder?.status === "pending") {
         const items = mergeItem(cachedOrder.items, params);
 
         if (items.length === 0) {
@@ -85,6 +86,12 @@ export const useAddToCart = () => {
         });
       }
 
+      // Stale pointer: the cached order is no longer pending (paid or
+      // cancelled out-of-band). Drop the pointer and start a fresh order.
+      if (activeOrderId && cachedOrder && cachedOrder.status !== "pending") {
+        clearActiveOrder();
+      }
+
       return createOrder.mutateAsync({
         items: [{ productId: params.productId, quantity: params.quantity }],
       });
@@ -94,10 +101,22 @@ export const useAddToCart = () => {
         setActiveOrderId({ id: order.id });
       }
     },
+    onError: (error) => {
+      if (
+        error instanceof ApiError &&
+        error.code === OrderErrorCodes.OutOfStock
+      ) {
+        // Stock changed underneath us (e.g. another kiosk sold out the
+        // item): refresh menu caches so the badges stop lying.
+        void queryClient.invalidateQueries({
+          queryKey: getUseListProductsKey(),
+        });
+      }
+    },
   });
 
   return { ...addToCart, isAnyAddPending };
 };
 
 export const isOutOfStockError = (error: unknown) =>
-  error instanceof ApiError && error.code === "OUT_OF_STOCK";
+  error instanceof ApiError && error.code === OrderErrorCodes.OutOfStock;

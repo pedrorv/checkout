@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getUseListProductsKey } from "@/features/menu";
-import { apiRequest } from "@/shared";
-
+import { ApiError, apiRequest } from "@/shared";
+import { OrderErrorCodes } from "../orders.errors";
+import { useOrderStore } from "../orders.store";
 import type { OrderDTO } from "../orders.types";
 import { getUseGetOrderKey } from "./useGetOrder.query";
 
@@ -24,6 +25,15 @@ export const useCancelOrder = () => {
       void queryClient.invalidateQueries({
         queryKey: getUseListProductsKey(),
       });
+    },
+    onError: (error, variables) => {
+      if (
+        error instanceof ApiError &&
+        (error.code === OrderErrorCodes.OrderNotFound ||
+          error.code === OrderErrorCodes.OrderNotPending)
+      ) {
+        useOrderStore.getState().clearIfActive({ id: variables.id });
+      }
     },
   });
 };

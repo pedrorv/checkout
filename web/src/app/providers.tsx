@@ -10,7 +10,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         {children}
-        <Toaster position="bottom-left" richColors />
+        <Toaster position="bottom-center" richColors />
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getUseListProductsKey } from "@/features/menu";
-import { type AtLeastOne, apiRequest } from "@/shared";
-
+import { ApiError, type AtLeastOne, apiRequest } from "@/shared";
+import { OrderErrorCodes } from "../orders.errors";
+import { useOrderStore } from "../orders.store";
 import type { OrderDTO, UpdateOrderPayload } from "../orders.types";
 import { getUseGetOrderKey } from "./useGetOrder.query";
 
@@ -28,5 +29,24 @@ export const useUpdateOrder = () => {
         queryKey: getUseListProductsKey(),
       });
     },
+    onError: (error, variables) => {
+      clearActiveOrderIfDead(error, variables.id);
+    },
   });
+};
+
+const isDeadOrderError = (error: unknown) =>
+  error instanceof ApiError &&
+  (error.code === OrderErrorCodes.OrderNotFound ||
+    error.code === OrderErrorCodes.OrderNotPending);
+
+/**
+ * Clears the session pointer when the active order was definitively removed
+ * or transitioned out of `pending` elsewhere (e.g. paid at another terminal),
+ * so the next add-to-cart starts a fresh order instead of looping on errors.
+ */
+const clearActiveOrderIfDead = (error: unknown, id: string) => {
+  if (isDeadOrderError(error)) {
+    useOrderStore.getState().clearIfActive({ id });
+  }
 };

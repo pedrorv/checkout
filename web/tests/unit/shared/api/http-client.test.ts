@@ -68,6 +68,52 @@ describe("apiRequest error handling", () => {
     expect(error?.status).toBe(0);
   });
 
+  it("maps a request exceeding the timeout to TIMEOUT_ERROR", async () => {
+    vi.useFakeTimers();
+    fetchMock.respondWith(
+      (_input, init) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        }),
+    );
+
+    try {
+      const promise = capture(() => apiRequest("/menu"));
+
+      await vi.advanceTimersByTimeAsync(10_000);
+      const error = await promise;
+
+      expect(error?.code).toBe("TIMEOUT_ERROR");
+      expect(error?.status).toBe(0);
+      expect(error?.message).toBe("The request timed out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("maps a caller abort to NETWORK_ERROR, not TIMEOUT_ERROR", async () => {
+    fetchMock.respondWith(
+      (_input, init) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        }),
+    );
+
+    const controller = new AbortController();
+    const promise = capture(() =>
+      apiRequest("/menu", { signal: controller.signal }),
+    );
+
+    controller.abort();
+    const error = await promise;
+
+    expect(error?.code).toBe("NETWORK_ERROR");
+  });
+
   it("returns the parsed body on success", async () => {
     fetchMock.respondWith(jsonResponse(200, { data: [] }));
 

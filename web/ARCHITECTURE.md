@@ -42,7 +42,8 @@ This is a self-checkout snack bar. There is no client-side cart:
 Consequences:
 
 - **cart state is server state**: items, totals, and status are `OrderDTO` cached by TanStack Query — never a client store
-- **the only client state is a session pointer**: `useOrderStore` (`orders.store.ts`) holds `activeOrderId`, nothing else
+- **the only client state is a session pointer**: `useOrderStore` (`orders.store.ts`) holds `activeOrderId`, nothing else. The pointer is persisted to sessionStorage, so it survives a page reload but not a browser restart — the next customer starts clean
+- **dead pointers self-heal**: mutations clear the pointer when the active order is definitively gone (`ORDER_NOT_FOUND`) or no longer pending (`ORDER_NOT_PENDING`), and `useAddToCart` drops a stale non-pending cached order before creating a fresh one — a mis-tap can never wedge the kiosk in an error loop
 - **the cart is a screen, not a feature**: `CartScreen` lives in `features/orders/screens/` and composes the feature's own hooks (create → update → pay/cancel) around the session pointer
 
 ## Request Lifecycle
@@ -162,11 +163,11 @@ Import rules:
 | State | Owner | Examples |
 |---|---|---|
 | Server state | TanStack Query cache | orders, products, categories |
-| Session state | Zustand (`orders.store.ts`) | `activeOrderId` |
+| Session state | Zustand (`orders.store.ts`, persisted to sessionStorage) | `activeOrderId` |
 | UI state | Zustand (`shared/theme/theme.store.ts`) | theme (light/dark) |
 | URL state | react-router | route params, current screen |
 
-If data lives in Postgres, it belongs in the Query cache — never in a client store. Client stores hold only pointers or UI state that survives no reload.
+If data lives in Postgres, it belongs in the Query cache — never in a client store. Client stores hold only pointers or UI state; the session pointer survives a reload (sessionStorage), but never a browser restart.
 
 ## Cache Invalidation Contract
 

@@ -1,7 +1,11 @@
-type ResponseFactory = () => Promise<Response> | Response;
+type ResponseFactory = (
+  input: string | URL | Request,
+  init?: RequestInit,
+) => Promise<Response> | Response;
 
 type FetchRequest = {
   path: string;
+  method: string;
   headers: Record<string, string>;
 };
 
@@ -47,16 +51,17 @@ export const fetchMock: FetchMock = (() => {
       ) => {
         requests.push({
           path: toPathname(input),
+          method: init?.method ?? "GET",
           headers: toHeaders(input, init),
         });
 
         const match = responsesByPath?.[toPathname(input)];
 
         if (match) {
-          return match();
+          return match(input, init);
         }
 
-        return nextResponse();
+        return nextResponse(input, init);
       }) as typeof fetch;
     },
 

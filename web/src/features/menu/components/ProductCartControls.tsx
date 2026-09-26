@@ -24,7 +24,7 @@ export function ProductCartControls({
           if (!isOutOfStockError(error)) {
             toast.error("Could not update the cart");
           } else {
-            toast.error(`${product.name} is out of stock`);
+            toast.error(`${product.name}: not enough stock available`);
           }
         },
       },
