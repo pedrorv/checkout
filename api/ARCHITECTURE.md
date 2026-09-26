@@ -72,8 +72,7 @@ This gives the service a clear separation:
 
 ### `src/features/`
 
-`menu/` is the first feature. Each feature owns the modules needed for that
-domain rather than splitting the whole codebase by technical layer first.
+Current features: `menu/` and `orders/`. Each feature owns the modules needed for that domain rather than splitting the whole codebase by technical layer first.
 
 ## Module Responsibilities
 
@@ -187,16 +186,11 @@ This service validates requests before entering business logic. Controllers assu
 Purpose:
 
 - centralize user-facing error messages for a feature
-- define the feature's public error codes (`*ErrorsCodes`, UPPERCASE strings
-  like `OUT_OF_STOCK`) that controllers send in error bodies
+- define the feature's public error codes (`*ErrorsCodes`, UPPERCASE strings like `OUT_OF_STOCK`) that controllers send in error bodies
 
-Every error response has the shape `{ code, message }`: `code` is the
-machine-readable `*ErrorsCodes` value clients branch on; `message` is the
-human-readable text clients display. Keep codes stable — rewording a message
-is safe, renaming a code is a breaking change.
+Every error response has the shape `{ code, message }`: `code` is the machine-readable `*ErrorsCodes` value clients branch on; `message` is the human-readable text clients display. Keep codes stable — rewording a message is safe, renaming a code is a breaking change.
 
-This keeps response text and wire codes consistent and avoids scattering
-literal strings across controllers.
+This keeps response text and wire codes consistent and avoids scattering literal strings across controllers.
 
 ### `*.result-kinds.ts`
 
@@ -315,7 +309,7 @@ src/docs/
 ├── refs.ts             # $ref builders
 ├── utils.ts            # jsonContent / jsonResponse helpers
 ├── shared/             # base schemas and responses
-└── features/           # per-feature docs modules (menu/ is the first)
+└── features/           # per-feature docs modules (menu/, orders/)
 ```
 
 A `DocsModule` groups the OpenAPI pieces a module owns:
@@ -325,7 +319,7 @@ A `DocsModule` groups the OpenAPI pieces a module owns:
 `openapi.ts` merges all registered groups into one document:
 
 ```ts
-const docGroups = [sharedDocs];
+const docGroups = [sharedDocs, menuDocs, orderDocs];
 ```
 
 This separation has a tradeoff:
@@ -371,8 +365,7 @@ Blueprint rule:
 - unit test contracts and pure helpers
 - integration test real feature flows through the public HTTP surface
 
-A guard in `tests/helpers` refuses to run integration tests unless
-`DATABASE_URL` points at the `checkout-test` database.
+A guard in `tests/helpers` refuses to run integration tests unless `DATABASE_URL` points at the `checkout-test` database.
 
 ## Recommended Feature Template
 

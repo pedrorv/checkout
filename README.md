@@ -1,8 +1,6 @@
 # Checkout
 
-A standalone POC repository (feature-first services, infra/features/shared
-layers, request flows, testing setup, docs layer) in a minimal,
-locally-runnable shape.
+A standalone POC repository (feature-first services, infra/features/shared layers, request flows, testing setup, docs layer) in a minimal, locally-runnable shape.
 
 ## Prerequisites
 
@@ -19,7 +17,7 @@ make up
 
 After `make up` finishes:
 
-- web: http://localhost:8000 (Home shows "API: online")
+- web: http://localhost:8000 (menu and self-checkout UI)
 - api: http://localhost:3000
 - docs: http://localhost:3000/docs (Swagger UI)
 - db: localhost:5432
@@ -32,7 +30,7 @@ Stop everything with `make down`.
 |---|---|
 | `make up` | Start postgres, migrations, api, and web (dev compose) |
 | `make down` | Stop and remove the dev compose stack |
-| `make test` | Run api unit + integration tests in Docker (test compose) |
+| `make test` | Run api (unit + integration) and web (vitest) tests in Docker (test compose) |
 | `make seed` | Seed the dev database with the snack bar menu |
 | `make migrate-create name=<migration>` | Create a new Prisma migration (test DB) |
 | `make migrate-dev` | Apply pending Prisma migrations (test DB) |
@@ -42,15 +40,13 @@ Stop everything with `make down`.
 
 ## Testing notes
 
-- Unit tests (`api/tests/unit/`) need no database — they cover validators and
-  pure helpers.
-- Integration tests (`api/tests/integration/`) run against the test database
-  (`checkout-test`) and are executed via `make test` (Docker wraps the DB
-  lifecycle). A guard in `tests/helpers` refuses to run integration tests
-  against any other database.
+- api unit tests (`api/tests/unit/`) need no database — they cover validators and pure helpers.
+- api integration tests (`api/tests/integration/`) run against the test database (`checkout-test`) and are executed via `make test` (Docker wraps the DB lifecycle). A guard in `tests/helpers` refuses to run integration tests against any other database.
+- web tests (`web/tests/unit/`) run via vitest with `fetch` always mocked — no database and no real API calls.
 
 ## Documentation
 
 - [api/README.md](./api/README.md): API service overview and commands
 - [api/ARCHITECTURE.md](./api/ARCHITECTURE.md): API service architecture blueprint
 - [web/README.md](./web/README.md): web app overview
+- [web/ARCHITECTURE.md](./web/ARCHITECTURE.md): web app architecture blueprint
