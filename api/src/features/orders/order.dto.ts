@@ -1,4 +1,7 @@
-import type { OrderStatus } from "../../../prisma/generated/client";
+import type {
+  CancelReason,
+  OrderStatus,
+} from "../../../prisma/generated/client";
 
 export type OrderItemDTO = {
   productId: string;
@@ -10,6 +13,7 @@ export type OrderItemDTO = {
 export type OrderDTO = {
   id: string;
   status: OrderStatus;
+  cancelReason: CancelReason | null;
   customerName: string;
   customerEmail: string;
   total: number;

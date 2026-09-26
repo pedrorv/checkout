@@ -8,6 +8,8 @@ const envVarsSchema = z
     API_PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string(),
     WEB_ALLOWED_ORIGINS: z.string().optional(),
+    ORDER_IDLE_MINUTES: z.coerce.number().default(15),
+    SWEEP_INTERVAL_MINUTES: z.coerce.number().default(3),
   })
   .passthrough();
 
@@ -24,6 +26,8 @@ export const config = {
   docsEnabled: envVars.NODE_ENV === "development",
   port: envVars.API_PORT,
   databaseUrl: envVars.DATABASE_URL,
+  orderIdleMs: envVars.ORDER_IDLE_MINUTES * 60_000,
+  sweepIntervalMs: envVars.SWEEP_INTERVAL_MINUTES * 60_000,
   webAllowedOrigins:
     envVars.WEB_ALLOWED_ORIGINS?.split(",")
       .map((origin) => origin.trim())

@@ -48,7 +48,9 @@ export const validateSchema = <S extends RequestValidationSchema>(
         return [key, result.data];
       }
 
-      details.push(...result.error.issues.map((issue) => issueToDetail(key, issue)));
+      details.push(
+        ...result.error.issues.map((issue) => issueToDetail(key, issue)),
+      );
       return [key, undefined];
     }),
   ) as Validated<S>;

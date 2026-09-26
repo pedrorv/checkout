@@ -11,9 +11,6 @@ export type UseCreateOrderParams = CreateOrderPayload;
 
 export const getUseCreateOrderKey = () => ["orders", "create"] as const;
 
-// A network error or a timeout is ambiguous: the request may have reached
-// the server and created the order. Keep the key so a human retry replays
-// the server's existing order instead of double-creating one.
 const isAmbiguousFailure = (error: unknown) =>
   error instanceof ApiError &&
   (error.code === ApiErrorCodes.NetworkError ||

@@ -25,6 +25,10 @@ The current API surface includes:
 
 Features live in `src/features/`: `menu/` (browsing) and `orders/` (order lifecycle and cart workflow — see [ARCHITECTURE.md](./ARCHITECTURE.md) for the module layout they follow).
 
+## Background Maintenance
+
+Stock is deducted the moment an order is created, so an abandoned cart holds stock until it is cancelled. The api runs a scheduled sweep (`ORDER_IDLE_MINUTES`, default 15) that cancels pending orders left idle for that long and returns their items to stock (`SWEEP_INTERVAL_MINUTES`, default 3). Swept orders are cancelled with `cancelReason: idle`, distinguishing them from customer cancels (`customer`).
+
 ## Important Paths
 
 - `api/src/main.ts`: service bootstrap and lifecycle

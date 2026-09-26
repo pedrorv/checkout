@@ -86,8 +86,6 @@ export const useAddToCart = () => {
         });
       }
 
-      // Stale pointer: the cached order is no longer pending (paid or
-      // cancelled out-of-band). Drop the pointer and start a fresh order.
       if (activeOrderId && cachedOrder && cachedOrder.status !== "pending") {
         clearActiveOrder();
       }
@@ -106,8 +104,6 @@ export const useAddToCart = () => {
         error instanceof ApiError &&
         error.code === OrderErrorCodes.OutOfStock
       ) {
-        // Stock changed underneath us (e.g. another kiosk sold out the
-        // item): refresh menu caches so the badges stop lying.
         void queryClient.invalidateQueries({
           queryKey: getUseListProductsKey(),
         });

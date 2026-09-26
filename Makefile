@@ -41,7 +41,7 @@ migrate-create:
 	trap cleanup EXIT; \
 	$(COMPOSE_TEST) up -d --wait postgres; \
 	$(COMPOSE_TEST) build db-migrations; \
-	$(COMPOSE_TEST) run --rm db-migrations pnpm exec prisma migrate dev --create-only $(TARGET_ARGS)
+	$(COMPOSE_TEST) run --rm db-migrations pnpm exec prisma migrate dev --create-only $(if $(name),--name=$(name),$(TARGET_ARGS))
 
 migrate-dev:
 	@set -e; \

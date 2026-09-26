@@ -5,6 +5,7 @@ export * from "./order.mapper";
 export * from "./order.repository";
 export * from "./order.result-kinds";
 export * from "./order.routes";
+export * from "./order.scheduler";
 export * from "./order.service";
 export * from "./order.validator";
 export * from "./payment.service.mock";

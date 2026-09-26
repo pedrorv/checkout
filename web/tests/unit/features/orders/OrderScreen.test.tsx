@@ -14,6 +14,7 @@ const baseOrder = {
   customerName: "Pedro Reis",
   customerEmail: "pedro.reis@test.com",
   total: 650,
+  cancelReason: null,
   cardLast4: "4242",
   paidAt: new Date().toISOString(),
   createdAt: new Date().toISOString(),
@@ -33,6 +34,7 @@ const pendingOrder: OrderDTO = {
   id: "order-pending",
   status: "pending",
   paidAt: null,
+  cancelReason: null,
   cardLast4: null,
 };
 
@@ -40,6 +42,24 @@ const completedOrder: OrderDTO = {
   ...baseOrder,
   id: "order-completed",
   status: "completed",
+};
+
+const idleCancelledOrder: OrderDTO = {
+  ...baseOrder,
+  id: "order-idle",
+  status: "cancelled",
+  cancelReason: "idle",
+  paidAt: null,
+  cardLast4: null,
+};
+
+const customerCancelledOrder: OrderDTO = {
+  ...baseOrder,
+  id: "order-customer-cancelled",
+  status: "cancelled",
+  cancelReason: "customer",
+  paidAt: null,
+  cardLast4: null,
 };
 
 const jsonResponse = (body: unknown) => () =>
@@ -95,6 +115,28 @@ describe("OrderScreen cancel affordance", () => {
 
     expect(
       screen.queryByRole("button", { name: "Cancel order" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains that an idle-cancelled order was cleared for inactivity", async () => {
+    renderScreen(idleCancelledOrder);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/cancelled automatically after a period of/i),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("does not show the inactivity explanation for a customer-cancelled order", async () => {
+    renderScreen(customerCancelledOrder);
+
+    await waitFor(() => {
+      expect(screen.getByText("Order")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText(/cancelled automatically after a period of/i),
     ).not.toBeInTheDocument();
   });
 });

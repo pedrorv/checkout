@@ -1,5 +1,7 @@
 export type OrderStatus = "pending" | "completed" | "cancelled";
 
+export type CancelReason = "idle" | "customer";
+
 export type OrderItemDTO = {
   productId: string;
   productName: string;
@@ -10,6 +12,7 @@ export type OrderItemDTO = {
 export type OrderDTO = {
   id: string;
   status: OrderStatus;
+  cancelReason: CancelReason | null;
   customerName: string;
   customerEmail: string;
   total: number;

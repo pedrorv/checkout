@@ -19,6 +19,7 @@ const toOrderDTO = (
 ): OrderDTO => ({
   id: row.id,
   status: row.status,
+  cancelReason: row.cancelReason,
   customerName: row.customerName,
   customerEmail: row.customerEmail,
   total: row.total,

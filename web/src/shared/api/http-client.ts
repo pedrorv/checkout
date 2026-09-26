@@ -1,10 +1,5 @@
 import { BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 
-/**
- * Error codes produced by this client (or interpreted from api responses),
- * mirroring the api's `*ErrorsCodes` convention. Server-sent feature codes
- * (e.g. `OUT_OF_STOCK`) live in each feature's `*.errors.ts`.
- */
 export const ApiErrorCodes = {
   NetworkError: "NETWORK_ERROR",
   TimeoutError: "TIMEOUT_ERROR",
@@ -97,7 +92,6 @@ export const apiRequest = async <T>(
 
     return (await response.json()) as T;
   } catch (error) {
-    // Errors thrown by toApiError are already normalized: pass them through.
     if (error instanceof ApiError) {
       throw error;
     }
@@ -124,11 +118,6 @@ const jsonHeaders = {
   "content-type": "application/json",
 };
 
-/**
- * Wraps the caller's abort signal with a request timeout. `timedOut()` is
- * checked only if the fetch rejects: true means the timeout fired (not the
- * caller aborting), so the failure is reported as `TIMEOUT_ERROR`.
- */
 const withTimeout = (signal: AbortSignal | undefined) => {
   const controller = new AbortController();
 

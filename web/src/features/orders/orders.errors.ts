@@ -1,9 +1,5 @@
 import { ApiError, ApiErrorCodes } from "@/shared";
 
-/**
- * Mirrors the api's `OrderErrorsCodes`: machine-readable wire codes that
- * this client branches on, keyed by stable enum member names.
- */
 export const OrderErrorCodes = {
   OrderNotFound: "ORDER_NOT_FOUND",
   OrderNotPending: "ORDER_NOT_PENDING",

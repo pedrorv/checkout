@@ -24,6 +24,7 @@ const orderItemRow = {
 const orderRow: OrderRow = {
   id: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
   status: "pending",
+  cancelReason: null,
   customerName: "Pedro Reis",
   customerEmail: "pedro.reis@test.com",
   total: 1300,
@@ -43,6 +44,7 @@ describe("orderMapper", () => {
       expect(dto).toEqual({
         id: orderRow.id,
         status: "pending",
+        cancelReason: null,
         customerName: "Pedro Reis",
         customerEmail: "pedro.reis@test.com",
         total: 1300,
@@ -81,6 +83,17 @@ describe("orderMapper", () => {
       expect(dto.status).toBe("completed");
       expect(dto.paidAt).toBe("2026-01-15T12:30:00.000Z");
       expect(dto.cardLast4).toBe("4242");
+    });
+
+    it("maps cancelReason when the order was cancelled", () => {
+      const dto = orderMapper.toOrderDTO({
+        ...orderRow,
+        status: "cancelled",
+        cancelReason: "idle",
+      });
+
+      expect(dto.status).toBe("cancelled");
+      expect(dto.cancelReason).toBe("idle");
     });
   });
 });

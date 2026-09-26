@@ -14,6 +14,11 @@ enum OrderStatus {
   cancelled
 }
 
+enum CancelReason {
+  idle
+  customer
+}
+
 model Category {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name      String
@@ -60,16 +65,17 @@ model Inventory {
 }
 
 model Order {
-  id             String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  status         OrderStatus @default(pending)
-  customerName   String      @map("customer_name")
-  customerEmail  String      @map("customer_email")
+  id             String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  status         OrderStatus  @default(pending)
+  cancelReason   CancelReason? @map("cancel_reason")
+  customerName   String       @map("customer_name")
+  customerEmail  String       @map("customer_email")
   total          Int
-  idempotencyKey String?     @unique @map("idempotency_key")
-  paidAt         DateTime?   @map("paid_at")
-  cardLast4      String?     @map("card_last4")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+  idempotencyKey String?      @unique @map("idempotency_key")
+  paidAt         DateTime?    @map("paid_at")
+  cardLast4      String?      @map("card_last4")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
 
   items OrderItem[]
 

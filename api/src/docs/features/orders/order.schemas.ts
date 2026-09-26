@@ -71,6 +71,7 @@ export const orderSchemas = {
     required: [
       "id",
       "status",
+      "cancelReason",
       "customerName",
       "customerEmail",
       "total",
@@ -85,6 +86,13 @@ export const orderSchemas = {
       status: {
         type: "string",
         enum: ["pending", "completed", "cancelled"],
+      },
+      cancelReason: {
+        type: "string",
+        enum: ["idle", "customer"],
+        nullable: true,
+        description:
+          "Set when an order is cancelled: `customer` via the cancel endpoint, `idle` by the scheduled sweep of stale pending orders. Null otherwise.",
       },
       customerName: { type: "string" },
       customerEmail: { type: "string" },

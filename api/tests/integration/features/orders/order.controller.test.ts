@@ -461,6 +461,7 @@ describe("POST /orders/:id/cancel", () => {
 
     expect(response.status).toBe(httpStatus.OK);
     expect(response.body.status).toBe("cancelled");
+    expect(response.body.cancelReason).toBe("customer");
     expect(await getStock(product.id)).toBe(8);
   });
 

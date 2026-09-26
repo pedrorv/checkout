@@ -1,5 +1,12 @@
 import type { Server } from "node:http";
-import { app, connectPrisma, disconnectPrisma, runMigrations } from "./infra";
+import {
+  app,
+  connectPrisma,
+  disconnectPrisma,
+  runMigrations,
+  startSchedulers,
+  stopSchedulers,
+} from "./infra";
 import { config } from "./shared";
 
 let server: Server;
@@ -10,6 +17,7 @@ runMigrations()
     server = app.listen(config.port, () => {
       console.log(`Listening on port ${config.port}`);
     });
+    startSchedulers();
   })
   .catch((error) => {
     console.error("Error starting server:", error);
@@ -18,6 +26,8 @@ runMigrations()
 
 const gracefulShutdown = async () => {
   console.log("Shutting down gracefully...");
+
+  stopSchedulers();
 
   if (server) {
     server.close(() => {

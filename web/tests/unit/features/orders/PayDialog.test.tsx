@@ -19,6 +19,7 @@ const order: OrderDTO = {
   customerEmail: "",
   total: 650,
   paidAt: null,
+  cancelReason: null,
   cardLast4: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -115,29 +116,22 @@ describe("PayDialog", () => {
     const payButton = screen.getByRole("button", { name: /Pay / });
     const monthSelect = screen.getByLabelText("Month");
     const yearSelect = screen.getByLabelText("Year");
-    const currentYear = String(new Date().getFullYear());
+    const nextYear = String(new Date().getFullYear() + 1);
 
-    // Luhn-invalid number blocks payment
-    await user.type(screen.getByLabelText("Card number"), "4242424242424241");
-    await user.selectOptions(monthSelect, "01");
-    await user.selectOptions(yearSelect, currentYear);
-    await user.type(screen.getByLabelText("CVC"), "123");
-
-    expect(payButton).toBeDisabled();
-
-    // Luhn-valid number still blocked while expiry is unselected
-    await user.clear(screen.getByLabelText("Card number"));
     await user.type(screen.getByLabelText("Card number"), "4242424242424242");
 
     expect(payButton).toBeDisabled();
 
-    // Valid card with expiry filled: enabled (January of the current year
-    // is accepted because server-side comparisons run in UTC)
-    await user.type(screen.getByLabelText("CVC"), "123");
-
-    // Note: current-year January may already be past; the dialog only
-    // offers the current and next 9 years, so pick December to be safe.
     await user.selectOptions(monthSelect, "12");
+    await user.selectOptions(yearSelect, nextYear);
+    await user.type(screen.getByLabelText("CVC"), "123");
+    await user.clear(screen.getByLabelText("Card number"));
+    await user.type(screen.getByLabelText("Card number"), "4242424242424241");
+
+    expect(payButton).toBeDisabled();
+
+    await user.clear(screen.getByLabelText("Card number"));
+    await user.type(screen.getByLabelText("Card number"), "4242424242424242");
 
     expect(payButton).toBeEnabled();
   });
@@ -199,6 +193,7 @@ describe("PayDialog", () => {
         ...order,
         status: "completed",
         paidAt: new Date().toISOString(),
+        cancelReason: null,
         cardLast4: "4242",
       }),
     });

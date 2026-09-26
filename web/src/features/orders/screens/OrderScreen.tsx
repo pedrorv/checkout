@@ -95,6 +95,12 @@ export function OrderScreen() {
                     : ""}
                 </p>
               )}
+              {data.status === "cancelled" && data.cancelReason === "idle" && (
+                <p className="text-muted-foreground text-sm">
+                  This order was cancelled automatically after a period of
+                  inactivity, and its items were returned to stock.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-4 p-6">

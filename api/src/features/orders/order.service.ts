@@ -1,5 +1,10 @@
-import { OrderStatus, Prisma } from "../../../prisma/generated/client";
 import {
+  CancelReason,
+  OrderStatus,
+  Prisma,
+} from "../../../prisma/generated/client";
+import {
+  config,
   type Failure,
   prisma,
   SharedResultKinds,
@@ -337,7 +342,11 @@ const cancelOrder = async (params: {
   try {
     const cancelled = await prisma.$transaction(async (tx) => {
       const claimed = await orderRepository.claimPendingOrder(
-        { id: params.id, newStatus: OrderStatus.cancelled },
+        {
+          id: params.id,
+          newStatus: OrderStatus.cancelled,
+          cancelReason: CancelReason.customer,
+        },
         { client: tx },
       );
 
@@ -429,10 +438,68 @@ const payOrder = async (params: {
   };
 };
 
+const SWEEP_BATCH_LIMIT = 100;
+
+const sweepIdlePendingOrders = async (): Promise<{
+  cancelledCount: number;
+}> => {
+  const olderThan = new Date(Date.now() - config.orderIdleMs);
+
+  const candidates = await orderRepository.findIdlePendingOrders({
+    olderThan,
+    limit: SWEEP_BATCH_LIMIT,
+  });
+
+  let cancelledCount = 0;
+
+  for (const candidate of candidates) {
+    const restored = await prisma.$transaction(async (tx) => {
+      const claimed = await orderRepository.claimPendingOrder(
+        {
+          id: candidate.id,
+          newStatus: OrderStatus.cancelled,
+          cancelReason: CancelReason.idle,
+          olderThan,
+        },
+        { client: tx },
+      );
+
+      if (!claimed) {
+        return false;
+      }
+
+      const order = await orderRepository.findOrderById(
+        { id: candidate.id },
+        { client: tx },
+      );
+
+      if (!order) {
+        return false;
+      }
+
+      for (const item of sortItemsByProductId(order.items)) {
+        await orderRepository.restoreStock(
+          { productId: item.productId, quantity: item.quantity },
+          { client: tx },
+        );
+      }
+
+      return true;
+    });
+
+    if (restored) {
+      cancelledCount += 1;
+    }
+  }
+
+  return { cancelledCount };
+};
+
 export const orderService = {
   createOrder,
   getOrder,
   updateOrder,
   cancelOrder,
   payOrder,
+  sweepIdlePendingOrders,
 };

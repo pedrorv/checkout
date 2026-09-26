@@ -20,6 +20,7 @@ const order: OrderDTO = {
   customerEmail: "",
   total: 650,
   paidAt: null,
+  cancelReason: null,
   cardLast4: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

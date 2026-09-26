@@ -40,11 +40,6 @@ const isDeadOrderError = (error: unknown) =>
   (error.code === OrderErrorCodes.OrderNotFound ||
     error.code === OrderErrorCodes.OrderNotPending);
 
-/**
- * Clears the session pointer when the active order was definitively removed
- * or transitioned out of `pending` elsewhere (e.g. paid at another terminal),
- * so the next add-to-cart starts a fresh order instead of looping on errors.
- */
 const clearActiveOrderIfDead = (error: unknown, id: string) => {
   if (isDeadOrderError(error)) {
     useOrderStore.getState().clearIfActive({ id });

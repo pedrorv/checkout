@@ -54,3 +54,14 @@ export const insertOrder = async (params: {
     include: { items: true },
   });
 };
+
+export const backdateOrder = async (params: {
+  id: string;
+  minutes: number;
+}) => {
+  await prisma.$executeRaw`
+    UPDATE orders
+    SET updated_at = now() - (${params.minutes} || ' minutes')::interval
+    WHERE id = ${params.id}::uuid
+  `;
+};

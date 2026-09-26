@@ -8,10 +8,6 @@ type OrderState = {
   clearIfActive: (params: { id: string }) => void;
 };
 
-/**
- * Persisted to sessionStorage: the pointer survives a page reload (the kiosk
- * scenario) but not a browser restart, so the next customer starts clean.
- */
 export const useOrderStore = create<OrderState>()(
   persist(
     (set, get) => ({

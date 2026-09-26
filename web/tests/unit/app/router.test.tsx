@@ -45,6 +45,7 @@ const order = jsonResponse({
   customerEmail: "pedro.reis@test.com",
   total: 1000,
   paidAt: new Date().toISOString(),
+  cancelReason: null,
   cardLast4: "4242",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

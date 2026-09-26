@@ -1,4 +1,5 @@
 import type {
+  CancelReason,
   Order,
   OrderItem,
   OrderStatus,
@@ -132,14 +133,26 @@ const updateOrder = async (
 };
 
 const claimPendingOrder = async (
-  params: { id: string; newStatus: OrderStatus },
+  params: {
+    id: string;
+    newStatus: OrderStatus;
+    cancelReason?: CancelReason;
+    olderThan?: Date;
+  },
   options?: RepositoryMethodOptions,
 ): Promise<boolean> => {
   const client: DbClient = options?.client ?? prisma;
 
   const result = await client.order.updateMany({
-    where: { id: params.id, status: "pending" },
-    data: { status: params.newStatus },
+    where: {
+      id: params.id,
+      status: "pending",
+      ...(params.olderThan ? { updatedAt: { lt: params.olderThan } } : {}),
+    },
+    data: {
+      status: params.newStatus,
+      ...(params.cancelReason ? { cancelReason: params.cancelReason } : {}),
+    },
   });
 
   return result.count === 1;
@@ -192,9 +205,27 @@ const restoreStock = async (
   });
 };
 
+const findIdlePendingOrders = async (
+  params: { olderThan: Date; limit: number },
+  options?: RepositoryMethodOptions,
+): Promise<OrderRow[]> => {
+  const client: DbClient = options?.client ?? prisma;
+
+  return client.order.findMany({
+    where: {
+      status: "pending",
+      updatedAt: { lt: params.olderThan },
+    },
+    orderBy: { updatedAt: "asc" },
+    take: params.limit,
+    include: withItemsInclude,
+  });
+};
+
 export const orderRepository = {
   findOrderById,
   findOrderByIdempotencyKey,
+  findIdlePendingOrders,
   createOrder,
   updateOrder,
   claimPendingOrder,
