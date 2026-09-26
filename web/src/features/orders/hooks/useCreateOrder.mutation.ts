@@ -1,36 +1,43 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 
 import { getUseListProductsKey } from "@/features/menu";
-import { apiRequest } from "@/shared";
+import { ApiError, apiRequest } from "@/shared";
 
 import type { CreateOrderPayload, OrderDTO } from "../orders.types";
 import { getUseGetOrderKey } from "./useGetOrder.query";
 
-export type UseCreateOrderParams = CreateOrderPayload & {
-  idempotencyKey: string;
-};
+export type UseCreateOrderParams = CreateOrderPayload;
 
 export const getUseCreateOrderKey = () => ["orders", "create"] as const;
 
+const isAmbiguousFailure = (error: unknown) =>
+  error instanceof ApiError && error.code === "NETWORK_ERROR";
+
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   return useMutation({
     mutationKey: getUseCreateOrderKey(),
-    mutationFn: (params: UseCreateOrderParams) => {
-      const { idempotencyKey, ...payload } = params;
-
-      return apiRequest<OrderDTO>("/orders", {
+    mutationFn: (params: UseCreateOrderParams) =>
+      apiRequest<OrderDTO>("/orders", {
         method: "POST",
-        body: payload,
-        headers: { "idempotency-key": idempotencyKey },
-      });
-    },
+        body: params,
+        headers: { "idempotency-key": idempotencyKeyRef.current },
+      }),
     onSuccess: (order) => {
+      idempotencyKeyRef.current = crypto.randomUUID();
+
       queryClient.setQueryData(getUseGetOrderKey({ id: order.id }), order);
       void queryClient.invalidateQueries({
         queryKey: getUseListProductsKey(),
       });
+    },
+    onError: (error) => {
+      if (!isAmbiguousFailure(error)) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
     },
   });
 };

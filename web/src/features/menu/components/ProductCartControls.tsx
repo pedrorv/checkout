@@ -38,7 +38,7 @@ export function ProductCartControls({
           variant="outline"
           size="icon"
           aria-label={`Decrease quantity of ${product.name}`}
-          disabled={addToCart.isPending}
+          disabled={addToCart.isAnyAddPending}
           onClick={() => mutate(-1)}
         >
           <Minus />
@@ -48,7 +48,7 @@ export function ProductCartControls({
           variant="outline"
           size="icon"
           aria-label={`Increase quantity of ${product.name}`}
-          disabled={addToCart.isPending || product.inStock === 0}
+          disabled={addToCart.isAnyAddPending || product.inStock === 0}
           onClick={() => mutate(1)}
         >
           <Plus />
@@ -61,7 +61,7 @@ export function ProductCartControls({
     <Button
       size="sm"
       onClick={() => mutate(1)}
-      disabled={product.inStock === 0 || addToCart.isPending}
+      disabled={product.inStock === 0 || addToCart.isAnyAddPending}
     >
       <Plus />
       Add

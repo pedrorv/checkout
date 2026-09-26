@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ProductCard } from "@/features/menu/components/ProductCard";
 import type { ProductDTO } from "@/features/menu/menu.types";
 
+import { fetchMock } from "../../../helpers/fetch-mock";
+
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
+  defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 });
 
 const product: ProductDTO = {
@@ -20,6 +22,13 @@ const product: ProductDTO = {
   category: { slug: "fried-snacks", name: "Fried Snacks" },
 };
 
+const otherProduct: ProductDTO = {
+  ...product,
+  id: "product-2",
+  name: "Empada",
+  slug: "empada",
+};
+
 const renderCard = (quantityInCart: number) =>
   render(
     <QueryClientProvider client={queryClient}>
@@ -29,6 +38,7 @@ const renderCard = (quantityInCart: number) =>
 
 describe("ProductCard", () => {
   afterEach(() => {
+    fetchMock.restore();
     queryClient.clear();
   });
 
@@ -80,5 +90,45 @@ describe("ProductCard", () => {
     expect(
       within(dialog).getByText("Fried dough filled with shredded chicken."),
     ).toBeInTheDocument();
+  });
+
+  it("disables add controls on all cards while any add is in flight", async () => {
+    const user = userEvent.setup();
+    let resolveCreate: ((value: Response) => void) | undefined;
+
+    fetchMock.install();
+    fetchMock.respondWithByPath({
+      "/orders": () =>
+        new Promise<Response>((resolve) => {
+          resolveCreate = resolve;
+        }),
+    });
+
+    try {
+      render(
+        <QueryClientProvider client={queryClient}>
+          <ProductCard product={product} quantityInCart={0} />
+          <ProductCard product={otherProduct} quantityInCart={0} />
+        </QueryClientProvider>,
+      );
+
+      await user.click(screen.getAllByRole("button", { name: "Add" })[0]);
+
+      await waitFor(() => {
+        const addButtons = screen.getAllByRole("button", { name: "Add" });
+
+        expect(addButtons).toHaveLength(2);
+        for (const button of addButtons) {
+          expect(button).toBeDisabled();
+        }
+      });
+    } finally {
+      resolveCreate?.(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    }
   });
 });

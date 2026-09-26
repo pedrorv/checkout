@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsMutating,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { ApiError } from "@/shared";
 
@@ -50,7 +54,10 @@ export const useAddToCart = () => {
   const updateOrder = useUpdateOrder();
   const cancelOrder = useCancelOrder();
 
-  return useMutation({
+  const isAnyAddPending =
+    useIsMutating({ mutationKey: getUseAddToCartKey() }) > 0;
+
+  const addToCart = useMutation({
     mutationKey: getUseAddToCartKey(),
     mutationFn: async (params: UseAddToCartParams) => {
       const cachedOrder = activeOrderId
@@ -79,7 +86,6 @@ export const useAddToCart = () => {
       }
 
       return createOrder.mutateAsync({
-        idempotencyKey: crypto.randomUUID(),
         items: [{ productId: params.productId, quantity: params.quantity }],
       });
     },
@@ -89,6 +95,8 @@ export const useAddToCart = () => {
       }
     },
   });
+
+  return { ...addToCart, isAnyAddPending };
 };
 
 export const isOutOfStockError = (error: unknown) =>

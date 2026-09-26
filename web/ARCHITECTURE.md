@@ -181,7 +181,7 @@ Because cart writes mutate inventory:
 
 Menu queries never write; no invalidation flows from `menu → orders`.
 
-`useCreateOrder` requires an idempotency key the api validates as UUIDv4 — generate with `crypto.randomUUID()` at the call site (per attempt, not per session). `useUpdateOrder` requires at least one payload field; the api rejects empty PATCH bodies with 400.
+`useCreateOrder` owns its idempotency key (UUIDv4, api-validated): the key is stable across retries of the same logical attempt and rotates after a definitive outcome (success or 4xx). On an ambiguous failure (network error, status 0) the key is kept, so a human retry replays the server's existing order instead of double-creating one. This is safe for the cancel → re-add flow because a definitively cancelled order rotates the key before the next create. `useUpdateOrder` requires at least one payload field; the api rejects empty PATCH bodies with 400. All add-to-cart controls disable while any add is in flight (`isAnyAddPending` via `useIsMutating`), preventing concurrent creates across product cards.
 
 ## Shared Layer
 
