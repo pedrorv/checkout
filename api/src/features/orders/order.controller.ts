@@ -127,6 +127,11 @@ const payOrder = actionMethod(async (_req, res) => {
         code: OrderErrorsCodes.OrderNotPending,
         message: OrderErrors.OrderNotPending,
       });
+    case OrderResultKinds.CustomerInfoRequired:
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+        code: OrderErrorsCodes.CustomerInfoRequired,
+        message: OrderErrors.CustomerInfoRequired,
+      });
     case OrderResultKinds.PaymentDeclined:
       return res.status(httpStatus.PAYMENT_REQUIRED).json({
         code: OrderErrorsCodes.PaymentDeclined,

@@ -27,10 +27,21 @@ export const orderSchemas = {
   },
   CreateOrderRequest: {
     type: "object",
-    required: ["customerName", "customerEmail", "items"],
+    required: ["items"],
     properties: {
-      customerName: { type: "string", minLength: 1, maxLength: 255 },
-      customerEmail: { type: "string", format: "email", maxLength: 255 },
+      customerName: {
+        type: "string",
+        maxLength: 255,
+        description:
+          "Optional at creation, required before payment. Defaults to an empty string.",
+      },
+      customerEmail: {
+        type: "string",
+        format: "email",
+        maxLength: 255,
+        description:
+          "Optional at creation, required before payment. Defaults to an empty string.",
+      },
       items: {
         type: "array",
         minItems: 1,

@@ -1,7 +1,7 @@
 import { ApiError, apiRequest } from "@/shared";
 import { fetchMock } from "../../../helpers/fetch-mock";
 
-const jsonResponse = (status: number, body: unknown) =>
+const jsonResponse = (status: number, body: unknown) => () =>
   Promise.resolve({
     ok: status >= 200 && status < 300,
     status,
@@ -45,7 +45,7 @@ describe("apiRequest error handling", () => {
   });
 
   it("falls back when the body is not JSON", async () => {
-    fetchMock.respondWith(
+    fetchMock.respondWith(() =>
       Promise.resolve({
         ok: false,
         status: 500,
@@ -60,7 +60,7 @@ describe("apiRequest error handling", () => {
   });
 
   it("maps network failures to NETWORK_ERROR", async () => {
-    fetchMock.respondWith(Promise.reject(new TypeError("fetch failed")));
+    fetchMock.respondWith(() => Promise.reject(new TypeError("fetch failed")));
 
     const error = await capture(() => apiRequest("/menu"));
 

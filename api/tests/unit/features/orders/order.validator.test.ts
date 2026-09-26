@@ -27,6 +27,17 @@ describe("orderValidator", () => {
       expect(value.body.items).toHaveLength(1);
     });
 
+    it("accepts a payload without customer data and defaults it to empty strings", () => {
+      const { error, value } = validateSchema(orderValidator.createOrder, {
+        headers: { "idempotency-key": uuidv4() },
+        body: { items: [{ productId: uuidv4(), quantity: 1 }] },
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.body.customerName).toBe("");
+      expect(value.body.customerEmail).toBe("");
+    });
+
     it("requires an idempotency key header", () => {
       const { error } = validateSchema(orderValidator.createOrder, {
         headers: {},

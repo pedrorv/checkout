@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { getUseGetProductKey, getUseListProductsKey } from "@/features/menu";
+import { getUseListProductsKey } from "@/features/menu";
 import { type AtLeastOne, apiRequest } from "@/shared";
 
 import type { OrderDTO, UpdateOrderPayload } from "../orders.types";
@@ -26,9 +26,6 @@ export const useUpdateOrder = () => {
       queryClient.setQueryData(getUseGetOrderKey({ id: order.id }), order);
       void queryClient.invalidateQueries({
         queryKey: getUseListProductsKey(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: getUseGetProductKey(),
       });
     },
   });

@@ -76,6 +76,25 @@ describe("POST /orders", () => {
     expect(await getStock(product.id)).toBe(9);
   });
 
+  it("creates an order without customer data, defaulting to empty strings", async () => {
+    const product = await setupProduct({ price: 650 });
+
+    const response = await createOrder({
+      items: [{ productId: product.id, quantity: 1 }],
+    });
+
+    expect(response.status).toBe(httpStatus.CREATED);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        status: "pending",
+        customerName: "",
+        customerEmail: "",
+        total: 650,
+      }),
+    );
+    expect(await getStock(product.id)).toBe(9);
+  });
+
   it("computes the total from multiple items", async () => {
     const first = await setupProduct({ price: 650 });
     const second = await setupProduct({ price: 250 });
@@ -532,6 +551,65 @@ describe("POST /orders/:id/pay", () => {
     expect(new Date(response.body.paidAt).getTime()).toBeGreaterThan(
       Date.now() - 60_000,
     );
+  });
+
+  it("returns 422 when the order has no customer name and email", async () => {
+    const product = await setupProduct();
+    const order = await insertOrder({
+      customerName: "",
+      customerEmail: "",
+      items: [{ productId: product.id, quantity: 1 }],
+    });
+
+    const response = await request(app)
+      .post(`/orders/${order.id}/pay`)
+      .send({ card: validCard() });
+
+    expect(response.status).toBe(httpStatus.UNPROCESSABLE_ENTITY);
+    expect(response.body).toEqual({
+      code: OrderErrorsCodes.CustomerInfoRequired,
+      message: OrderErrors.CustomerInfoRequired,
+    });
+
+    const recheck = await request(app).get(`/orders/${order.id}`);
+    expect(recheck.body.status).toBe("pending");
+  });
+
+  it("returns 422 when the order is missing only the customer email", async () => {
+    const product = await setupProduct();
+    const order = await insertOrder({
+      customerName: "Pedro Reis",
+      customerEmail: "",
+      items: [{ productId: product.id, quantity: 1 }],
+    });
+
+    const response = await request(app)
+      .post(`/orders/${order.id}/pay`)
+      .send({ card: validCard() });
+
+    expect(response.status).toBe(httpStatus.UNPROCESSABLE_ENTITY);
+  });
+
+  it("completes an order whose customer data was patched before paying", async () => {
+    const product = await setupProduct();
+    const order = await insertOrder({
+      customerName: "",
+      customerEmail: "",
+      items: [{ productId: product.id, quantity: 1 }],
+    });
+
+    const patch = await request(app).patch(`/orders/${order.id}`).send({
+      customerName: "Pedro Reis",
+      customerEmail: "pedro.reis@test.com",
+    });
+    expect(patch.status).toBe(httpStatus.OK);
+
+    const response = await request(app)
+      .post(`/orders/${order.id}/pay`)
+      .send({ card: validCard() });
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(response.body.status).toBe("completed");
   });
 
   it("returns 402 and keeps the order pending on a declined card", async () => {

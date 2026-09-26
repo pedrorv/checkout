@@ -12,6 +12,7 @@ RUN pnpm install
 
 WORKDIR /app/web
 COPY web/tsconfig.json web/vite.config.ts web/index.html ./
+COPY web/public/ public/
 COPY web/src/ src/
 
 ENV NODE_ENV=development

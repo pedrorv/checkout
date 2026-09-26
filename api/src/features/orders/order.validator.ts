@@ -30,8 +30,8 @@ const mergeItems = (items: Array<{ productId: string; quantity: number }>) => {
 const createOrder: RequestValidationSchema = {
   headers: idempotencyKeyHeader,
   body: Joi.object({
-    customerName: Joi.string().min(1).max(255).required(),
-    customerEmail: Joi.string().email().max(255).required(),
+    customerName: Joi.string().max(255).optional().default(""),
+    customerEmail: Joi.string().email().max(255).optional().default(""),
     items: Joi.array().items(orderItemSchema).min(1).max(50).required(),
   }).custom((value) => ({
     ...value,

@@ -16,4 +16,18 @@ export const orderResponses = {
       message: { type: "string", example: "The card was declined" },
     },
   }),
+  CustomerInfoRequired: jsonResponse(
+    "Customer name and email are required before payment.",
+    {
+      type: "object",
+      required: ["code", "message"],
+      properties: {
+        code: { type: "string", example: "CUSTOMER_INFO_REQUIRED" },
+        message: {
+          type: "string",
+          example: "Customer name and email are required before payment",
+        },
+      },
+    },
+  ),
 };

@@ -45,6 +45,7 @@ type PayOrderResult =
   | Success<OrderDTO>
   | OrderFailure<"OrderNotFound">
   | OrderFailure<"OrderNotPending">
+  | OrderFailure<"CustomerInfoRequired">
   | OrderFailure<"PaymentDeclined">;
 
 type PaymentCard = {
@@ -392,6 +393,10 @@ const payOrder = async (params: {
 
   if (order.status !== OrderStatus.pending) {
     return { kind: OrderResultKinds.OrderNotPending };
+  }
+
+  if (!order.customerName || !order.customerEmail) {
+    return { kind: OrderResultKinds.CustomerInfoRequired };
   }
 
   const charge = await paymentServiceMock.charge({

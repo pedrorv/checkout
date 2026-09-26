@@ -14,7 +14,7 @@ TEST_LOG ?= /tmp/checkout-test-docker.log
 
 up:
 	@set -eu; \
-	$(COMPOSE_DEV) up -d --wait $(if $(TARGET_ARGS),$(TARGET_ARGS),postgres db-migrations api web)
+	$(COMPOSE_DEV) up -d --wait --build $(if $(TARGET_ARGS),$(TARGET_ARGS),postgres db-migrations api web)
 
 down:
 	@set -eu; \

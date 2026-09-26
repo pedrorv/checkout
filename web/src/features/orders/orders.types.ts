@@ -3,6 +3,7 @@ export type OrderStatus = "pending" | "completed" | "cancelled";
 export type OrderErrorCode =
   | "ORDER_NOT_FOUND"
   | "ORDER_NOT_PENDING"
+  | "CUSTOMER_INFO_REQUIRED"
   | "PAYMENT_DECLINED"
   | "PRODUCT_NOT_FOUND"
   | "OUT_OF_STOCK";
@@ -28,8 +29,8 @@ export type OrderDTO = {
 };
 
 export type CreateOrderPayload = {
-  customerName: string;
-  customerEmail: string;
+  customerName?: string;
+  customerEmail?: string;
   items: Array<{ productId: string; quantity: number }>;
 };
 

@@ -74,6 +74,7 @@ services:
       - "${WEB_PORT:-8000}:8000"
     volumes:
       - ./web/src:/app/web/src
+      - ./web/public:/app/web/public
       - ./web/index.html:/app/web/index.html
       - ./web/vite.config.ts:/app/web/vite.config.ts
     depends_on:

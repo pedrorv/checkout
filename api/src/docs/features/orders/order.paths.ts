@@ -75,6 +75,7 @@ export const orderPaths = {
         402: responseRef("PaymentDeclined"),
         404: responseRef("NotFound"),
         409: responseRef("Conflict"),
+        422: responseRef("CustomerInfoRequired"),
         500: responseRef("InternalServerError"),
       },
     },

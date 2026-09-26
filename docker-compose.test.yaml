@@ -58,6 +58,10 @@ services:
       dockerfile: web/Dockerfile.test
     restart: "no"
     command: ["pnpm", "run", "test"]
+    volumes:
+      - ./web/src:/app/web/src
+      - ./web/tests:/app/web/tests
+      - ./web/vitest.config.ts:/app/web/vitest.config.ts
 
 volumes:
   pgdata-test:
