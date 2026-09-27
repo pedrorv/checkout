@@ -149,7 +149,10 @@ export function CartScreen() {
                   <div className="flex flex-col">
                     <span className="font-medium">{item.productName}</span>
                     <span className="text-muted-foreground text-sm">
-                      {formatPrice(item.unitPrice)} each
+                      {formatPrice(item.unitPrice)} each ·{" "}
+                      {item.pickupMode === "self"
+                        ? "From the display"
+                        : "Collect at the counter"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

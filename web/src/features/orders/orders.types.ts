@@ -1,3 +1,5 @@
+import type { PickupMode } from "@/features/menu";
+
 export type OrderStatus = "pending" | "completed" | "cancelled";
 
 export type CancelReason = "idle" | "customer";
@@ -7,6 +9,7 @@ export type OrderItemDTO = {
   productName: string;
   quantity: number;
   unitPrice: number;
+  pickupMode: PickupMode;
 };
 
 export type OrderDTO = {
@@ -18,6 +21,7 @@ export type OrderDTO = {
   total: number;
   paidAt: string | null;
   cardLast4: string | null;
+  pickupCode: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItemDTO[];

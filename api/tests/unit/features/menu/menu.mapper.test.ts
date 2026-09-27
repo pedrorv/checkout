@@ -24,6 +24,7 @@ const productRow = {
   description: "Fried dough filled with shredded chicken.",
   price: 650,
   imageUrl: null,
+  pickupMode: "counter" as const,
   position: 1,
   createdAt: new Date("2026-01-15T12:00:00.000Z"),
   updatedAt: new Date("2026-01-15T12:00:00.000Z"),
@@ -64,6 +65,7 @@ describe("menuMapper", () => {
         description: "Fried dough filled with shredded chicken.",
         price: 650,
         imageUrl: null,
+        pickupMode: "counter",
         inStock: 10,
         category: { slug: "fried-snacks", name: "Fried Snacks" },
       });
@@ -96,6 +98,16 @@ describe("menuMapper", () => {
       });
 
       expect(dto.inStock).toBe(0);
+    });
+
+    it("maps a self-serve product to null stock, even with an inventory row", () => {
+      const dto = menuMapper.toProductDTO({
+        ...productRow,
+        pickupMode: "self",
+      });
+
+      expect(dto.pickupMode).toBe("self");
+      expect(dto.inStock).toBeNull();
     });
   });
 });

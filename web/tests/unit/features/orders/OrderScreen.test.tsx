@@ -1,10 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { OrderDTO } from "@/features/orders/orders.types";
 import { OrderScreen } from "@/features/orders/screens";
-import { RECEIPT_RESET_SECONDS } from "@/features/orders/screens/OrderScreen";
+import {
+  PICKUP_RECEIPT_RESET_SECONDS,
+  RECEIPT_RESET_SECONDS,
+} from "@/features/orders/screens/OrderScreen";
 
 import { fetchMock } from "../../../helpers/fetch-mock";
 
@@ -18,6 +21,7 @@ const baseOrder = {
   total: 650,
   cancelReason: null,
   cardLast4: "4242",
+  pickupCode: null,
   paidAt: new Date().toISOString(),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -27,6 +31,7 @@ const baseOrder = {
       productName: "Coxinha",
       quantity: 1,
       unitPrice: 650,
+      pickupMode: "counter",
     },
   ],
 } satisfies Partial<OrderDTO>;
@@ -44,6 +49,30 @@ const completedOrder: OrderDTO = {
   ...baseOrder,
   id: "order-completed",
   status: "completed",
+};
+
+const pickupOrder: OrderDTO = {
+  ...baseOrder,
+  id: "order-pickup",
+  status: "completed",
+  pickupCode: "K7P2",
+  total: 900,
+  items: [
+    {
+      productId: "product-1",
+      productName: "Coxinha",
+      quantity: 1,
+      unitPrice: 650,
+      pickupMode: "counter",
+    },
+    {
+      productId: "product-2",
+      productName: "Cola",
+      quantity: 1,
+      unitPrice: 250,
+      pickupMode: "self",
+    },
+  ],
 };
 
 const idleCancelledOrder: OrderDTO = {
@@ -213,5 +242,71 @@ describe("OrderScreen receipt reset", () => {
     });
 
     expect(screen.queryByText("Menu screen")).not.toBeInTheDocument();
+  });
+});
+
+describe("OrderScreen pickup code", () => {
+  beforeEach(() => {
+    fetchMock.install();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    fetchMock.restore();
+    queryClient.clear();
+  });
+
+  it("shows the pickup code and splits counter items from self-serve items", async () => {
+    renderScreen(pickupOrder);
+
+    expect(await screen.findByText("K7P2")).toBeInTheDocument();
+    expect(
+      screen.getByText("Show this code at the counter"),
+    ).toBeInTheDocument();
+
+    const counterList = screen.getByText("Collect at the counter")
+      .nextElementSibling as HTMLElement;
+    const selfServeList = screen.getByText("Already yours")
+      .nextElementSibling as HTMLElement;
+
+    expect(within(counterList).getByText(/Coxinha/)).toBeInTheDocument();
+    expect(within(counterList).queryByText(/Cola/)).not.toBeInTheDocument();
+    expect(within(selfServeList).getByText(/Cola/)).toBeInTheDocument();
+  });
+
+  it("does not show a pickup code for a self-serve-only order", async () => {
+    renderScreen(completedOrder);
+
+    await screen.findByText("Order confirmed");
+
+    expect(
+      screen.queryByText("Show this code at the counter"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Already yours")).not.toBeInTheDocument();
+  });
+
+  it("keeps the receipt up longer when there is a code to show", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderScreen(pickupOrder);
+
+    expect(
+      await screen.findByRole("button", {
+        name: `Done (${PICKUP_RECEIPT_RESET_SECONDS})`,
+      }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(RECEIPT_RESET_SECONDS * 1000);
+    });
+
+    expect(screen.queryByText("Menu screen")).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(
+        (PICKUP_RECEIPT_RESET_SECONDS - RECEIPT_RESET_SECONDS) * 1000,
+      );
+    });
+
+    expect(screen.getByText("Menu screen")).toBeInTheDocument();
   });
 });

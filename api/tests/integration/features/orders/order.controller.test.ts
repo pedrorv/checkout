@@ -6,7 +6,9 @@ import {
   OrderErrors,
   OrderErrorsCodes,
 } from "../../../../src/features/orders/order.errors";
+import { pickupCode } from "../../../../src/features/orders/pickup-code";
 import { app } from "../../../../src/infra";
+import { prisma } from "../../../../src/shared/prisma";
 import {
   expectValidationError,
   getStock,
@@ -39,6 +41,20 @@ const setupProduct = async (params?: { price?: number; stock?: number }) => {
 
   return product;
 };
+
+const setupSelfServeProduct = async (params?: { price?: number }) => {
+  const category = await insertCategory({});
+
+  return insertProduct({
+    categoryId: category.id,
+    price: params?.price ?? 1000,
+    pickupMode: "self",
+  });
+};
+
+const pickupModesById = (
+  items: Array<{ productId: string; pickupMode: string }>,
+) => Object.fromEntries(items.map((item) => [item.productId, item.pickupMode]));
 
 const validCreatePayload = (items: Array<{ id: string }>) => ({
   customerName: "Pedro Reis",
@@ -245,6 +261,57 @@ describe("POST /orders", () => {
       path: ["headers", "idempotency-key"],
     });
   });
+
+  it("creates a self-serve-only order without touching inventory", async () => {
+    const product = await setupSelfServeProduct();
+
+    const response = await createOrder({
+      items: [{ productId: product.id, quantity: 50 }],
+    });
+
+    expect(response.status).toBe(httpStatus.CREATED);
+    expect(response.body.items).toEqual([
+      expect.objectContaining({ productId: product.id, pickupMode: "self" }),
+    ]);
+    expect(
+      await prisma.inventory.findUnique({ where: { productId: product.id } }),
+    ).toBeNull();
+  });
+
+  it("reserves stock only for the counter lines of a mixed order", async () => {
+    const counter = await setupProduct({ stock: 5 });
+    const selfServe = await setupSelfServeProduct();
+
+    const response = await createOrder({
+      items: [
+        { productId: counter.id, quantity: 2 },
+        { productId: selfServe.id, quantity: 3 },
+      ],
+    });
+
+    expect(response.status).toBe(httpStatus.CREATED);
+    expect(pickupModesById(response.body.items)).toEqual({
+      [counter.id]: "counter",
+      [selfServe.id]: "self",
+    });
+    expect(await getStock(counter.id)).toBe(3);
+  });
+
+  it("returns 409 when a counter item is out of stock, even alongside self-serve items", async () => {
+    const counter = await setupProduct({ stock: 1 });
+    const selfServe = await setupSelfServeProduct();
+
+    const response = await createOrder({
+      items: [
+        { productId: counter.id, quantity: 2 },
+        { productId: selfServe.id, quantity: 1 },
+      ],
+    });
+
+    expect(response.status).toBe(httpStatus.CONFLICT);
+    expect(response.body.code).toBe(OrderErrorsCodes.OutOfStock);
+    expect(await getStock(counter.id)).toBe(1);
+  });
 });
 
 describe("GET /orders/:id", () => {
@@ -419,6 +486,33 @@ describe("PATCH /orders/:id", () => {
     expect(await getStock(oldProduct.id)).toBe(7);
   });
 
+  it("adjusts only counter stock when a mixed order's items are replaced", async () => {
+    const counter = await setupProduct({ stock: 8 });
+    const selfServe = await setupSelfServeProduct();
+    const order = await insertOrder({
+      items: [
+        { productId: counter.id, quantity: 2, pickupMode: "counter" },
+        { productId: selfServe.id, quantity: 1, pickupMode: "self" },
+      ],
+    });
+
+    const response = await request(app)
+      .patch(`/orders/${order.id}`)
+      .send({
+        items: [
+          { productId: counter.id, quantity: 4 },
+          { productId: selfServe.id, quantity: 6 },
+        ],
+      });
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(pickupModesById(response.body.items)).toEqual({
+      [counter.id]: "counter",
+      [selfServe.id]: "self",
+    });
+    expect(await getStock(counter.id)).toBe(6);
+  });
+
   it("returns 409 when the order is not pending", async () => {
     const product = await setupProduct();
     const order = await insertOrder({
@@ -463,6 +557,50 @@ describe("POST /orders/:id/cancel", () => {
     expect(response.body.status).toBe("cancelled");
     expect(response.body.cancelReason).toBe("customer");
     expect(await getStock(product.id)).toBe(8);
+  });
+
+  it("restores only counter stock when a mixed order is cancelled", async () => {
+    const counter = await setupProduct({ stock: 8 });
+    const selfServe = await setupSelfServeProduct();
+    const order = await insertOrder({
+      items: [
+        { productId: counter.id, quantity: 2, pickupMode: "counter" },
+        { productId: selfServe.id, quantity: 3, pickupMode: "self" },
+      ],
+    });
+
+    const response = await request(app).post(`/orders/${order.id}/cancel`);
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(await getStock(counter.id)).toBe(10);
+    expect(
+      await prisma.inventory.findUnique({ where: { productId: selfServe.id } }),
+    ).toBeNull();
+  });
+
+  it("restores what the order reserved even if a product changed pickup mode since", async () => {
+    const becameSelfServe = await setupProduct({ stock: 8 });
+    const becameCounter = await setupProduct({ stock: 5 });
+    const order = await insertOrder({
+      items: [
+        { productId: becameSelfServe.id, quantity: 2, pickupMode: "counter" },
+        { productId: becameCounter.id, quantity: 1, pickupMode: "self" },
+      ],
+    });
+    await prisma.product.update({
+      where: { id: becameSelfServe.id },
+      data: { pickupMode: "self" },
+    });
+    await prisma.product.update({
+      where: { id: becameCounter.id },
+      data: { pickupMode: "counter" },
+    });
+
+    const response = await request(app).post(`/orders/${order.id}/cancel`);
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(await getStock(becameSelfServe.id)).toBe(10);
+    expect(await getStock(becameCounter.id)).toBe(5);
   });
 
   it("returns 409 when the order is already cancelled", async () => {
@@ -700,6 +838,102 @@ describe("POST /orders/:id/pay", () => {
     const recheck = await request(app).get(`/orders/${order.id}`);
     expect(recheck.body.status).toBe("completed");
     expect(recheck.body.paidAt).not.toBeNull();
+  });
+
+  it("issues a pickup code when the order has counter items", async () => {
+    const counter = await setupProduct();
+    const selfServe = await setupSelfServeProduct();
+    const order = await insertOrder({
+      items: [
+        { productId: counter.id, quantity: 1, pickupMode: "counter" },
+        { productId: selfServe.id, quantity: 1, pickupMode: "self" },
+      ],
+    });
+
+    const response = await request(app)
+      .post(`/orders/${order.id}/pay`)
+      .send({ card: validCard() });
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(response.body.pickupCode).toMatch(/^[0-9A-Z]{4}$/);
+
+    const recheck = await request(app).get(`/orders/${order.id}`);
+    expect(recheck.body.pickupCode).toBe(response.body.pickupCode);
+  });
+
+  it("returns no pickup code for a self-serve-only order", async () => {
+    const selfServe = await setupSelfServeProduct();
+    const order = await insertOrder({
+      items: [{ productId: selfServe.id, quantity: 1, pickupMode: "self" }],
+    });
+
+    const response = await request(app)
+      .post(`/orders/${order.id}/pay`)
+      .send({ card: validCard() });
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(response.body.status).toBe("completed");
+    expect(response.body.pickupCode).toBeNull();
+  });
+
+  describe("when today's pickup code is already taken", () => {
+    const takePickupCode = async (code: string) => {
+      const product = await setupProduct();
+      const earlier = await insertOrder({
+        status: "completed",
+        items: [{ productId: product.id, quantity: 1 }],
+      });
+
+      await prisma.order.update({
+        where: { id: earlier.id },
+        data: { pickupCode: pickupCode.toKey({ code, date: new Date() }) },
+      });
+    };
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("retries with a new code", async () => {
+      await takePickupCode("AAAA");
+      const product = await setupProduct();
+      const order = await insertOrder({
+        items: [{ productId: product.id, quantity: 1, pickupMode: "counter" }],
+      });
+      jest
+        .spyOn(pickupCode, "generate")
+        .mockReturnValueOnce("AAAA")
+        .mockReturnValueOnce("BBBB");
+
+      const response = await request(app)
+        .post(`/orders/${order.id}/pay`)
+        .send({ card: validCard() });
+
+      expect(response.status).toBe(httpStatus.OK);
+      expect(response.body.pickupCode).toBe("BBBB");
+    });
+
+    it("returns 500 and keeps the order pending after three clashes", async () => {
+      await takePickupCode("AAAA");
+      const product = await setupProduct();
+      const order = await insertOrder({
+        items: [{ productId: product.id, quantity: 1, pickupMode: "counter" }],
+      });
+      const generate = jest
+        .spyOn(pickupCode, "generate")
+        .mockReturnValue("AAAA");
+
+      const response = await request(app)
+        .post(`/orders/${order.id}/pay`)
+        .send({ card: validCard() });
+
+      expect(response.status).toBe(httpStatus.INTERNAL_SERVER_ERROR);
+      expect(generate).toHaveBeenCalledTimes(3);
+
+      const recheck = await request(app).get(`/orders/${order.id}`);
+      expect(recheck.body.status).toBe("pending");
+      expect(recheck.body.pickupCode).toBeNull();
+    });
   });
 
   it("returns 400 for a card number failing Luhn", async () => {

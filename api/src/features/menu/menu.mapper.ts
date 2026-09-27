@@ -1,7 +1,8 @@
-import type {
-  Category,
-  Inventory,
-  Product,
+import {
+  type Category,
+  type Inventory,
+  PickupMode,
+  type Product,
 } from "../../../prisma/generated/client";
 import type { CategoryDTO, ProductCategoryDTO, ProductDTO } from "./menu.dto";
 
@@ -29,7 +30,9 @@ const toProductDTO = (
   description: row.description,
   price: row.price,
   imageUrl: row.imageUrl,
-  inStock: row.inventory?.quantity ?? 0,
+  pickupMode: row.pickupMode,
+  inStock:
+    row.pickupMode === PickupMode.self ? null : (row.inventory?.quantity ?? 0),
   category: toProductCategoryDTO(row.category),
 });
 

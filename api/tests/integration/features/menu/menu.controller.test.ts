@@ -313,8 +313,25 @@ describe("GET /menu/products/:id", () => {
       description: "Fried dough filled with shredded chicken.",
       price: 650,
       imageUrl: null,
+      pickupMode: "counter",
       inStock: 0,
       category: { slug: "fried-snacks", name: "Fried Snacks" },
+    });
+  });
+
+  it("returns null stock for a self-serve product", async () => {
+    const category = await insertCategory({});
+    const product = await insertProduct({
+      categoryId: category.id,
+      pickupMode: "self",
+    });
+
+    const response = await request(app).get(`/menu/products/${product.id}`);
+
+    expect(response.status).toBe(httpStatus.OK);
+    expect(response.body).toMatchObject({
+      pickupMode: "self",
+      inStock: null,
     });
   });
 

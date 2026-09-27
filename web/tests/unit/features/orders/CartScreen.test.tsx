@@ -22,6 +22,7 @@ const order: OrderDTO = {
   paidAt: null,
   cancelReason: null,
   cardLast4: null,
+  pickupCode: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   items: [
@@ -30,6 +31,7 @@ const order: OrderDTO = {
       productName: "Coxinha",
       quantity: 1,
       unitPrice: 650,
+      pickupMode: "counter",
     },
   ],
 };
@@ -103,5 +105,38 @@ describe("CartScreen cancel flow", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByText("Coxinha")).toBeInTheDocument();
     expect(useOrderStore.getState().activeOrderId).toBe("order-1");
+  });
+});
+
+describe("CartScreen pickup labels", () => {
+  beforeEach(() => {
+    fetchMock.install();
+    queryClient.clear();
+    useOrderStore.getState().clear();
+  });
+
+  afterEach(() => {
+    fetchMock.restore();
+  });
+
+  it("tells the customer where each item is collected", () => {
+    seedActiveOrder({
+      ...order,
+      total: 900,
+      items: [
+        ...order.items,
+        {
+          productId: "product-2",
+          productName: "Cola",
+          quantity: 1,
+          unitPrice: 250,
+          pickupMode: "self",
+        },
+      ],
+    });
+    renderScreen();
+
+    expect(screen.getByText(/Collect at the counter/)).toBeInTheDocument();
+    expect(screen.getByText(/From the display/)).toBeInTheDocument();
   });
 });

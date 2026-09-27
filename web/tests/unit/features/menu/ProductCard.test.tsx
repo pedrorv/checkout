@@ -18,6 +18,7 @@ const product: ProductDTO = {
   description: "Fried dough filled with shredded chicken.",
   price: 650,
   imageUrl: null,
+  pickupMode: "counter",
   inStock: 10,
   category: { slug: "fried-snacks", name: "Fried Snacks" },
 };
@@ -89,6 +90,51 @@ describe("ProductCard", () => {
     expect(
       screen.getByRole("button", { name: "Decrease quantity of Coxinha" }),
     ).toBeEnabled();
+  });
+
+  it("shows the stock left for a counter product", () => {
+    renderCard(0);
+
+    expect(screen.getByText("10 left")).toBeInTheDocument();
+  });
+
+  it("marks a self-serve product without stock and keeps it addable", () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ProductCard
+          product={{ ...product, pickupMode: "self", inStock: null }}
+          quantityInCart={2}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Self-serve")).toBeInTheDocument();
+    expect(screen.queryByText("Out of stock")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Increase quantity of Coxinha" }),
+    ).toBeEnabled();
+  });
+
+  it("explains where a product is collected in the details dialog", async () => {
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ProductCard
+          product={{ ...product, pickupMode: "self", inStock: null }}
+          quantityInCart={0}
+        />
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "View details of Coxinha" }),
+    );
+
+    expect(
+      within(screen.getByRole("dialog", { name: "Coxinha" })).getByText(
+        /take it from the display/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("opens the details dialog with the full description from the title", async () => {

@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import { Badge, Card, formatPrice } from "@/shared";
+import { Card, formatPrice } from "@/shared";
 
 import type { ProductDTO } from "../menu.types";
+import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ProductCartControls } from "./ProductCartControls";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { ProductImage } from "./ProductImage";
@@ -39,9 +40,7 @@ export function ProductCard({ product, quantityInCart }: ProductCardProps) {
               {product.name}
             </button>
           </h3>
-          <Badge variant={product.inStock > 0 ? "secondary" : "destructive"}>
-            {product.inStock > 0 ? `${product.inStock} left` : "Out of stock"}
-          </Badge>
+          <AvailabilityBadge product={product} />
         </div>
         <p className="line-clamp-2 flex-1 text-muted-foreground text-sm">
           {product.description}

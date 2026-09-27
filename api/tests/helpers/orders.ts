@@ -32,12 +32,14 @@ export const insertOrder = async (params: {
     productId: string;
     quantity: number;
     unitPrice?: number;
+    pickupMode?: "counter" | "self";
   }>;
 }) => {
   const items = params.items.map((item) => ({
     productId: item.productId,
     quantity: item.quantity,
     unitPrice: item.unitPrice ?? 1000,
+    pickupMode: item.pickupMode ?? "counter",
   }));
 
   return prisma.order.create({

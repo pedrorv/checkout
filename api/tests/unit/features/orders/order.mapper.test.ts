@@ -7,6 +7,7 @@ const orderItemRow = {
   productId: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4d",
   quantity: 2,
   unitPrice: 650,
+  pickupMode: "counter" as const,
   product: {
     id: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4d",
     name: "Coxinha",
@@ -14,6 +15,7 @@ const orderItemRow = {
     description: "Fried dough filled with shredded chicken.",
     price: 650,
     imageUrl: null,
+    pickupMode: "counter" as const,
     position: 1,
     createdAt: new Date("2026-01-15T12:00:00.000Z"),
     updatedAt: new Date("2026-01-15T12:00:00.000Z"),
@@ -31,6 +33,7 @@ const orderRow: OrderRow = {
   idempotencyKey: "018f1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4f",
   paidAt: null,
   cardLast4: null,
+  pickupCode: null,
   createdAt: new Date("2026-01-15T12:00:00.000Z"),
   updatedAt: new Date("2026-01-15T12:00:00.000Z"),
   items: [orderItemRow],
@@ -50,6 +53,7 @@ describe("orderMapper", () => {
         total: 1300,
         paidAt: null,
         cardLast4: null,
+        pickupCode: null,
         createdAt: "2026-01-15T12:00:00.000Z",
         updatedAt: "2026-01-15T12:00:00.000Z",
         items: [
@@ -58,6 +62,7 @@ describe("orderMapper", () => {
             productName: "Coxinha",
             quantity: 2,
             unitPrice: 650,
+            pickupMode: "counter",
           },
         ],
       });
@@ -83,6 +88,16 @@ describe("orderMapper", () => {
       expect(dto.status).toBe("completed");
       expect(dto.paidAt).toBe("2026-01-15T12:30:00.000Z");
       expect(dto.cardLast4).toBe("4242");
+    });
+
+    it("exposes only the short pickup code, not its date-scoped key", () => {
+      const dto = orderMapper.toOrderDTO({
+        ...orderRow,
+        status: "completed",
+        pickupCode: "2026-01-15-K7P2",
+      });
+
+      expect(dto.pickupCode).toBe("K7P2");
     });
 
     it("maps cancelReason when the order was cancelled", () => {

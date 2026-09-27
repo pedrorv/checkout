@@ -1,6 +1,7 @@
 import {
   CancelReason,
   OrderStatus,
+  PickupMode,
   Prisma,
 } from "../../../prisma/generated/client";
 import {
@@ -17,6 +18,7 @@ import { orderMapper } from "./order.mapper";
 import { orderRepository } from "./order.repository";
 import { OrderResultKinds } from "./order.result-kinds";
 import { paymentServiceMock } from "./payment.service.mock";
+import { pickupCode } from "./pickup-code";
 
 type OrderFailure<K extends keyof typeof OrderResultKinds> = Failure<
   (typeof OrderResultKinds)[K]
@@ -69,9 +71,18 @@ type ResolvedItem = {
   productId: string;
   quantity: number;
   unitPrice: number;
+  pickupMode: PickupMode;
 };
 
-const isIdempotencyConflict = (error: unknown) =>
+type StockLine = {
+  productId: string;
+  quantity: number;
+  pickupMode: PickupMode;
+};
+
+const PICKUP_CODE_ATTEMPTS = 3;
+
+const isUniqueConflict = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
   error.code === "P2002";
 
@@ -116,11 +127,16 @@ const resolveItems = async (
     }
   }
 
-  const resolved = items.map((item) => ({
-    productId: item.productId,
-    quantity: item.quantity,
-    unitPrice: productsById.get(item.productId)?.price ?? 0,
-  }));
+  const resolved = items.map((item) => {
+    const product = productsById.get(item.productId);
+
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      unitPrice: product?.price ?? 0,
+      pickupMode: product?.pickupMode ?? PickupMode.counter,
+    };
+  });
 
   const total = resolved.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -130,11 +146,16 @@ const resolveItems = async (
   return { kind: "ok", items: resolved, total };
 };
 
+const counterLines = <T extends StockLine>(items: T[]) =>
+  sortItemsByProductId(
+    items.filter((item) => item.pickupMode === PickupMode.counter),
+  );
+
 const applyStockDecrement = async (
-  items: ResolvedItem[],
+  items: StockLine[],
   client: TransactionClient,
 ) => {
-  for (const item of sortItemsByProductId(items)) {
+  for (const item of counterLines(items)) {
     const decremented = await orderRepository.decrementStock(
       { productId: item.productId, quantity: item.quantity },
       { client },
@@ -143,6 +164,15 @@ const applyStockDecrement = async (
     if (!decremented) {
       throw new OutOfStockError();
     }
+  }
+};
+
+const restoreStock = async (items: StockLine[], client: TransactionClient) => {
+  for (const item of counterLines(items)) {
+    await orderRepository.restoreStock(
+      { productId: item.productId, quantity: item.quantity },
+      { client },
+    );
   }
 };
 
@@ -198,7 +228,7 @@ const createOrder = async (params: {
       return { kind: OrderResultKinds.OutOfStock };
     }
 
-    if (isIdempotencyConflict(error)) {
+    if (isUniqueConflict(error)) {
       const concurrent = await orderRepository.findOrderByIdempotencyKey({
         idempotencyKey: params.idempotencyKey,
       });
@@ -273,12 +303,7 @@ const updateOrder = async (params: {
       }
 
       if (resolution) {
-        for (const item of sortItemsByProductId(order.items)) {
-          await orderRepository.restoreStock(
-            { productId: item.productId, quantity: item.quantity },
-            { client: tx },
-          );
-        }
+        await restoreStock(order.items, tx);
 
         await applyStockDecrement(resolution.items, tx);
       }
@@ -363,12 +388,7 @@ const cancelOrder = async (params: {
         throw new OrderNotFoundError();
       }
 
-      for (const item of sortItemsByProductId(order.items)) {
-        await orderRepository.restoreStock(
-          { productId: item.productId, quantity: item.quantity },
-          { client: tx },
-        );
-      }
+      await restoreStock(order.items, tx);
 
       return order;
     });
@@ -387,6 +407,36 @@ const cancelOrder = async (params: {
     }
 
     throw error;
+  }
+};
+
+const completePendingOrder = async (params: {
+  id: string;
+  cardLast4: string;
+  needsPickupCode: boolean;
+}): Promise<boolean> => {
+  if (!params.needsPickupCode) {
+    return orderRepository.completePendingOrder({
+      id: params.id,
+      cardLast4: params.cardLast4,
+    });
+  }
+
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await orderRepository.completePendingOrder({
+        id: params.id,
+        cardLast4: params.cardLast4,
+        pickupCode: pickupCode.toKey({
+          code: pickupCode.generate(),
+          date: new Date(),
+        }),
+      });
+    } catch (error) {
+      if (!isUniqueConflict(error) || attempt >= PICKUP_CODE_ATTEMPTS) {
+        throw error;
+      }
+    }
   }
 };
 
@@ -417,9 +467,12 @@ const payOrder = async (params: {
     return { kind: OrderResultKinds.PaymentDeclined };
   }
 
-  const completed = await orderRepository.completePendingOrder({
+  const completed = await completePendingOrder({
     id: params.id,
     cardLast4: params.card.number.slice(-4),
+    needsPickupCode: order.items.some(
+      (item) => item.pickupMode === PickupMode.counter,
+    ),
   });
 
   if (!completed) {
@@ -477,12 +530,7 @@ const sweepIdlePendingOrders = async (): Promise<{
         return false;
       }
 
-      for (const item of sortItemsByProductId(order.items)) {
-        await orderRepository.restoreStock(
-          { productId: item.productId, quantity: item.quantity },
-          { client: tx },
-        );
-      }
+      await restoreStock(order.items, tx);
 
       return true;
     });

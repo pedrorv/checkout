@@ -1,7 +1,8 @@
 import { prisma } from "../src/shared/prisma";
+import { PickupMode } from "./generated/client";
 
 const DEFAULT_STOCK_QUANTITY = 10;
-const OUT_OF_STOCK_SLUGS = ["chocolate-brownie"];
+const OUT_OF_STOCK_SLUGS = ["chicken-sandwich"];
 const RESET_STOCK = process.argv.includes("--reset-stock");
 
 type CategorySeed = {
@@ -14,6 +15,7 @@ type CategorySeed = {
     description: string | null;
     price: number;
     imageUrl: string | null;
+    pickupMode: PickupMode;
     position: number;
   }>;
 };
@@ -30,6 +32,7 @@ const categories: CategorySeed[] = [
         description: "Fried dough filled with shredded chicken.",
         price: 650,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 1,
       },
       {
@@ -38,6 +41,7 @@ const categories: CategorySeed[] = [
         description: "Warm baked cheese bread roll.",
         price: 500,
         imageUrl: null,
+        pickupMode: PickupMode.self,
         position: 2,
       },
       {
@@ -46,6 +50,7 @@ const categories: CategorySeed[] = [
         description: "Fried pastry filled with seasoned beef.",
         price: 700,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 3,
       },
     ],
@@ -61,6 +66,7 @@ const categories: CategorySeed[] = [
         description: "Sausage, potato sticks, and sauces on a bun.",
         price: 1200,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 1,
       },
       {
@@ -69,6 +75,7 @@ const categories: CategorySeed[] = [
         description: "Beef patty, cheese, lettuce, and mayo.",
         price: 1500,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 2,
       },
       {
@@ -77,6 +84,7 @@ const categories: CategorySeed[] = [
         description: "Crispy chicken fillet with house sauce.",
         price: 1400,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 3,
       },
     ],
@@ -92,6 +100,7 @@ const categories: CategorySeed[] = [
         description: "Classic milk flan with caramel syrup.",
         price: 700,
         imageUrl: null,
+        pickupMode: PickupMode.self,
         position: 1,
       },
       {
@@ -100,6 +109,7 @@ const categories: CategorySeed[] = [
         description: "Fudgy brownie with chocolate chunks.",
         price: 600,
         imageUrl: null,
+        pickupMode: PickupMode.self,
         position: 2,
       },
     ],
@@ -115,6 +125,7 @@ const categories: CategorySeed[] = [
         description: "500ml bottle.",
         price: 250,
         imageUrl: null,
+        pickupMode: PickupMode.self,
         position: 1,
       },
       {
@@ -123,6 +134,7 @@ const categories: CategorySeed[] = [
         description: "330ml can, served cold.",
         price: 300,
         imageUrl: null,
+        pickupMode: PickupMode.self,
         position: 2,
       },
       {
@@ -131,6 +143,7 @@ const categories: CategorySeed[] = [
         description: "Freshly squeezed, 400ml.",
         price: 400,
         imageUrl: null,
+        pickupMode: PickupMode.counter,
         position: 3,
       },
     ],
@@ -164,10 +177,16 @@ const run = async () => {
           description: product.description,
           price: product.price,
           imageUrl: product.imageUrl,
+          pickupMode: product.pickupMode,
           position: product.position,
           categoryId: created.id,
         },
       });
+
+      // Self-serve items are not stock-controlled, so they get no inventory.
+      if (product.pickupMode === PickupMode.self) {
+        continue;
+      }
 
       const quantity = OUT_OF_STOCK_SLUGS.includes(product.slug)
         ? 0

@@ -4,7 +4,7 @@ ENV_DEV := .env.dev
 ENV_TEST := .env.test
 
 COMPOSE_DEV := docker compose --env-file $(ENV_DEV) -f docker-compose.yaml
-COMPOSE_TEST := docker compose --env-file $(ENV_TEST) -f docker-compose.test.yaml
+COMPOSE_TEST := docker compose -p checkout-test --env-file $(ENV_TEST) -f docker-compose.test.yaml
 
 TARGET_ARGS := $(filter-out --,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS)))
 

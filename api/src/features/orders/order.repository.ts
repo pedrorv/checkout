@@ -3,6 +3,7 @@ import type {
   Order,
   OrderItem,
   OrderStatus,
+  PickupMode,
   Prisma,
   PrismaClient,
   Product,
@@ -15,16 +16,19 @@ export type OrderRow = Order & {
   items: Array<OrderItem & { product: Product }>;
 };
 
+export type OrderItemParams = {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  pickupMode: PickupMode;
+};
+
 export type CreateOrderParams = {
   customerName: string;
   customerEmail: string;
   idempotencyKey: string | null;
   total: number;
-  items: Array<{
-    productId: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
+  items: OrderItemParams[];
 };
 
 const withItemsInclude = {
@@ -72,6 +76,7 @@ const createOrder = async (
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          pickupMode: item.pickupMode,
         })),
       },
     },
@@ -85,11 +90,7 @@ const updateOrder = async (
     customerName?: string;
     customerEmail?: string;
     total?: number;
-    items?: Array<{
-      productId: string;
-      quantity: number;
-      unitPrice: number;
-    }>;
+    items?: OrderItemParams[];
   },
   options?: RepositoryMethodOptions,
 ): Promise<OrderRow | null> => {
@@ -115,6 +116,7 @@ const updateOrder = async (
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          pickupMode: item.pickupMode,
         })),
       });
     }
@@ -159,7 +161,7 @@ const claimPendingOrder = async (
 };
 
 const completePendingOrder = async (
-  params: { id: string; cardLast4: string },
+  params: { id: string; cardLast4: string; pickupCode?: string },
   options?: RepositoryMethodOptions,
 ): Promise<boolean> => {
   const client: DbClient = options?.client ?? prisma;
@@ -170,6 +172,7 @@ const completePendingOrder = async (
       status: "completed",
       paidAt: new Date(),
       cardLast4: params.cardLast4,
+      pickupCode: params.pickupCode,
     },
   });
 

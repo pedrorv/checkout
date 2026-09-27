@@ -18,9 +18,10 @@ import { useCancelOrder } from "../hooks/useCancelOrder.mutation";
 import { getUseGetOrderKey, useGetOrder } from "../hooks/useGetOrder.query";
 import { getOrderErrorMessage } from "../orders.errors";
 import { useOrderStore } from "../orders.store";
-import type { OrderStatus } from "../orders.types";
+import type { OrderItemDTO, OrderStatus } from "../orders.types";
 
 export const RECEIPT_RESET_SECONDS = 15;
+export const PICKUP_RECEIPT_RESET_SECONDS = 60;
 
 const statusVariantByStatus: Record<
   OrderStatus,
@@ -30,6 +31,28 @@ const statusVariantByStatus: Record<
   completed: "default",
   cancelled: "destructive",
 };
+
+const firstName = (name: string) => name.trim().split(/\s+/)[0];
+
+function OrderItemList({ items }: { items: OrderItemDTO[] }) {
+  return (
+    <ul className="divide-y divide-border rounded-md border border-border">
+      {items.map((item) => (
+        <li
+          key={item.productId}
+          className="flex items-center justify-between p-4"
+        >
+          <span>
+            {item.quantity} × {item.productName}
+          </span>
+          <span className="font-medium">
+            {formatPrice(item.quantity * item.unitPrice)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function OrderScreen() {
   const { id } = useParams<{ id: string }>();
@@ -41,10 +64,20 @@ export function OrderScreen() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(RECEIPT_RESET_SECONDS);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const data = order.data;
   const completed = data?.status === "completed";
+  const pickupCode = completed ? data.pickupCode : null;
+  const secondsLeft = Math.max(
+    (pickupCode ? PICKUP_RECEIPT_RESET_SECONDS : RECEIPT_RESET_SECONDS) -
+      elapsedSeconds,
+    0,
+  );
+  const counterItems =
+    data?.items.filter((item) => item.pickupMode === "counter") ?? [];
+  const selfServeItems =
+    data?.items.filter((item) => item.pickupMode === "self") ?? [];
 
   const handleDone = useCallback(() => {
     navigate("/", { replace: true });
@@ -61,7 +94,7 @@ export function OrderScreen() {
     }
 
     const intervalId = setInterval(() => {
-      setSecondsLeft((seconds) => Math.max(seconds - 1, 0));
+      setElapsedSeconds((seconds) => seconds + 1);
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -121,7 +154,9 @@ export function OrderScreen() {
                 )}
               </div>
               {data.status === "completed" && data.customerName && (
-                <p className="font-medium">Thanks, {data.customerName}!</p>
+                <p className="font-medium">
+                  Thanks, {firstName(data.customerName)}!
+                </p>
               )}
               {data.status === "completed" && (
                 <p className="text-muted-foreground text-sm">
@@ -130,6 +165,16 @@ export function OrderScreen() {
                     ? ` on ${new Date(data.paidAt).toLocaleString()}`
                     : ""}
                 </p>
+              )}
+              {pickupCode && (
+                <div className="mt-2 flex flex-col items-center gap-1 rounded-lg border border-border px-8 py-4">
+                  <span className="text-muted-foreground text-sm">
+                    Show this code at the counter
+                  </span>
+                  <span className="font-bold font-mono text-5xl tracking-widest">
+                    {pickupCode}
+                  </span>
+                </div>
               )}
               {data.status === "cancelled" && data.cancelReason === "idle" && (
                 <p className="text-muted-foreground text-sm">
@@ -140,21 +185,20 @@ export function OrderScreen() {
             </div>
 
             <div className="flex flex-col gap-4 p-6">
-              <ul className="divide-y divide-border rounded-md border border-border">
-                {data.items.map((item) => (
-                  <li
-                    key={item.productId}
-                    className="flex items-center justify-between p-4"
-                  >
-                    <span>
-                      {item.quantity} × {item.productName}
-                    </span>
-                    <span className="font-medium">
-                      {formatPrice(item.quantity * item.unitPrice)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {pickupCode ? (
+                <>
+                  <h2 className="font-semibold">Collect at the counter</h2>
+                  <OrderItemList items={counterItems} />
+                  {selfServeItems.length > 0 && (
+                    <>
+                      <h2 className="font-semibold">Already yours</h2>
+                      <OrderItemList items={selfServeItems} />
+                    </>
+                  )}
+                </>
+              ) : (
+                <OrderItemList items={data.items} />
+              )}
               <div className="flex items-center justify-between px-4">
                 <span className="font-medium">Total</span>
                 <span className="text-xl font-bold">

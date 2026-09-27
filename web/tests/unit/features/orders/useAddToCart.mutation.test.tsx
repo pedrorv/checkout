@@ -25,6 +25,7 @@ const baseOrder: OrderDTO = {
   paidAt: null,
   cancelReason: null,
   cardLast4: null,
+  pickupCode: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   items: [
@@ -33,6 +34,7 @@ const baseOrder: OrderDTO = {
       productName: "Coxinha",
       quantity: 1,
       unitPrice: 650,
+      pickupMode: "counter",
     },
   ],
 };
@@ -137,6 +139,7 @@ describe("useAddToCart dead-pointer recovery", () => {
             productName: "Empada",
             quantity: 1,
             unitPrice: 500,
+            pickupMode: "counter",
           },
         ],
       }),

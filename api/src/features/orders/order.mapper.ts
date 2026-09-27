@@ -4,6 +4,7 @@ import type {
   Product,
 } from "../../../prisma/generated/client";
 import type { OrderDTO, OrderItemDTO } from "./order.dto";
+import { pickupCode } from "./pickup-code";
 
 const toOrderItemDTO = (
   row: OrderItem & { product: Product },
@@ -12,6 +13,7 @@ const toOrderItemDTO = (
   productName: row.product.name,
   quantity: row.quantity,
   unitPrice: row.unitPrice,
+  pickupMode: row.pickupMode,
 });
 
 const toOrderDTO = (
@@ -25,6 +27,7 @@ const toOrderDTO = (
   total: row.total,
   paidAt: row.paidAt?.toISOString() ?? null,
   cardLast4: row.cardLast4,
+  pickupCode: row.pickupCode ? pickupCode.fromKey(row.pickupCode) : null,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
   items: row.items.map(toOrderItemDTO),

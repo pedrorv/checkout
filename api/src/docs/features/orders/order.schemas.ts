@@ -3,7 +3,13 @@ import { schemaRef } from "../../refs";
 export const orderSchemas = {
   OrderItem: {
     type: "object",
-    required: ["productId", "productName", "quantity", "unitPrice"],
+    required: [
+      "productId",
+      "productName",
+      "quantity",
+      "unitPrice",
+      "pickupMode",
+    ],
     properties: {
       productId: { type: "string", format: "uuid" },
       productName: { type: "string" },
@@ -14,6 +20,12 @@ export const orderSchemas = {
       unitPrice: {
         type: "integer",
         description: "Product price in cents at purchase time.",
+      },
+      pickupMode: {
+        type: "string",
+        enum: ["counter", "self"],
+        description:
+          "The product's pickup mode when the item was ordered. Only `counter` items reserve stock.",
       },
     },
   },
@@ -77,6 +89,7 @@ export const orderSchemas = {
       "total",
       "paidAt",
       "cardLast4",
+      "pickupCode",
       "createdAt",
       "updatedAt",
       "items",
@@ -111,6 +124,13 @@ export const orderSchemas = {
         nullable: true,
         description:
           "Last four digits of the card used to pay; null otherwise.",
+      },
+      pickupCode: {
+        type: "string",
+        nullable: true,
+        pattern: "^[0-9A-Z]{4}$",
+        description:
+          "Code the customer shows at the counter, unique within the day. Set on payment when the order has `counter` items; null otherwise.",
       },
       createdAt: { type: "string", format: "date-time" },
       updatedAt: { type: "string", format: "date-time" },

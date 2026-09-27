@@ -1,5 +1,7 @@
 import type { PaginatedDTO } from "@/shared";
 
+export type PickupMode = "counter" | "self";
+
 export type CategoryDTO = {
   id: string;
   name: string;
@@ -19,7 +21,8 @@ export type ProductDTO = {
   description: string | null;
   price: number;
   imageUrl: string | null;
-  inStock: number;
+  pickupMode: PickupMode;
+  inStock: number | null;
   category: ProductCategoryDTO;
 };
 

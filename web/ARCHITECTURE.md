@@ -34,10 +34,10 @@ At a high level:
 
 This is a self-checkout snack bar. There is no client-side cart:
 
-- the moment the user registers an item, stock is deducted and a pending order exists on the server (`POST /orders` decrements stock transactionally)
+- the moment the user registers an item, a pending order exists on the server; counter items (`pickupMode: "counter"`) have their stock deducted transactionally (`POST /orders`), while self-serve items (`pickupMode: "self"`) are not stock-controlled and never sell out
 - updating items restores then re-decrements stock (`PATCH /orders/:id`)
 - abandoning the cart restores stock (`POST /orders/:id/cancel`)
-- paying completes the order (`POST /orders/:id/pay`)
+- paying completes the order (`POST /orders/:id/pay`); orders with counter items get a `pickupCode` the confirmation screen shows
 
 Consequences:
 

@@ -1,5 +1,4 @@
 import {
-  Badge,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -9,6 +8,7 @@ import {
 } from "@/shared";
 
 import type { ProductDTO } from "../menu.types";
+import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ProductCartControls } from "./ProductCartControls";
 import { ProductImage } from "./ProductImage";
 
@@ -31,9 +31,7 @@ export function ProductDetailDialog({
         <DialogHeader>
           <div className="flex items-center justify-between gap-2 pr-6">
             <DialogTitle>{product.name}</DialogTitle>
-            <Badge variant={product.inStock > 0 ? "secondary" : "destructive"}>
-              {product.inStock > 0 ? `${product.inStock} left` : "Out of stock"}
-            </Badge>
+            <AvailabilityBadge product={product} />
           </div>
           <DialogDescription>
             {product.category.name} · {formatPrice(product.price)}
@@ -49,6 +47,12 @@ export function ProductDetailDialog({
           />
 
           <p className="text-muted-foreground text-sm">{product.description}</p>
+
+          <p className="font-medium text-sm">
+            {product.pickupMode === "self"
+              ? "Take it from the display, then add it to your order here."
+              : "Prepared at the counter. Collect it with your pickup code after paying."}
+          </p>
 
           <div className="flex items-center justify-between">
             <span className="font-semibold text-lg">

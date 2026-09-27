@@ -23,6 +23,7 @@ export const insertProduct = async (params: {
   description?: string | null;
   price?: number;
   imageUrl?: string | null;
+  pickupMode?: "counter" | "self";
   position?: number;
 }) => {
   return prisma.product.create({
@@ -32,6 +33,7 @@ export const insertProduct = async (params: {
       description: params.description ?? null,
       price: params.price ?? 1000,
       imageUrl: params.imageUrl ?? null,
+      pickupMode: params.pickupMode ?? "counter",
       position: params.position ?? 0,
       categoryId: params.categoryId,
     },

@@ -21,6 +21,7 @@ const order: OrderDTO = {
   paidAt: null,
   cancelReason: null,
   cardLast4: null,
+  pickupCode: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   items: [
@@ -29,6 +30,7 @@ const order: OrderDTO = {
       productName: "Coxinha",
       quantity: 1,
       unitPrice: 650,
+      pickupMode: "counter",
     },
   ],
 };
@@ -195,6 +197,7 @@ describe("PayDialog", () => {
         paidAt: new Date().toISOString(),
         cancelReason: null,
         cardLast4: "4242",
+        pickupCode: null,
       }),
     });
 

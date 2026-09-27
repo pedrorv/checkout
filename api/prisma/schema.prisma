@@ -19,6 +19,11 @@ enum CancelReason {
   customer
 }
 
+enum PickupMode {
+  counter
+  self
+}
+
 model Category {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name      String
@@ -39,6 +44,7 @@ model Product {
   description String?
   price       Int
   imageUrl    String?  @map("image_url")
+  pickupMode  PickupMode @default(counter) @map("pickup_mode")
   position    Int
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -74,6 +80,7 @@ model Order {
   idempotencyKey String?      @unique @map("idempotency_key")
   paidAt         DateTime?    @map("paid_at")
   cardLast4      String?      @map("card_last4")
+  pickupCode     String?      @unique @map("pickup_code")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
 
@@ -90,6 +97,7 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   unitPrice Int     @map("unit_price")
+  pickupMode PickupMode @default(counter) @map("pickup_mode")
 
   @@index([orderId])
   @@map("order_items")

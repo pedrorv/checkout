@@ -47,6 +47,7 @@ export const menuSchemas = {
       "description",
       "price",
       "imageUrl",
+      "pickupMode",
       "inStock",
       "category",
     ],
@@ -60,9 +61,17 @@ export const menuSchemas = {
         description: "Price in cents.",
       },
       imageUrl: { type: "string", nullable: true },
+      pickupMode: {
+        type: "string",
+        enum: ["counter", "self"],
+        description:
+          "`counter`: stock-controlled, collected at the counter after payment. `self`: taken by the customer from the display, not stock-controlled.",
+      },
       inStock: {
         type: "integer",
-        description: "Units currently in stock.",
+        nullable: true,
+        description:
+          "Units currently in stock for `counter` items; null for `self` items, which never sell out.",
       },
       category: schemaRef("ProductCategory"),
     },

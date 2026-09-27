@@ -24,6 +24,7 @@ const pendingOrder: OrderDTO = {
   paidAt: null,
   cancelReason: null,
   cardLast4: null,
+  pickupCode: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   items: [
@@ -32,6 +33,7 @@ const pendingOrder: OrderDTO = {
       productName: "Coxinha",
       quantity: 1,
       unitPrice: 650,
+      pickupMode: "counter",
     },
   ],
 };
@@ -41,6 +43,7 @@ const completedOrder: OrderDTO = {
   status: "completed",
   paidAt: new Date().toISOString(),
   cardLast4: "4242",
+  pickupCode: null,
 };
 
 const jsonResponse =
