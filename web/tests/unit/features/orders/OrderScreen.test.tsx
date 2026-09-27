@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { OrderDTO } from "@/features/orders/orders.types";
 import { OrderScreen } from "@/features/orders/screens";
+import { RECEIPT_RESET_SECONDS } from "@/features/orders/screens/OrderScreen";
 
 import { fetchMock } from "../../../helpers/fetch-mock";
 
@@ -80,6 +82,7 @@ const renderScreen = (order: OrderDTO) => {
       <MemoryRouter initialEntries={[`/orders/${order.id}`]}>
         <Routes>
           <Route path="/orders/:id" element={<OrderScreen />} />
+          <Route path="/" element={<h1>Menu screen</h1>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -138,5 +141,77 @@ describe("OrderScreen cancel affordance", () => {
     expect(
       screen.queryByText(/cancelled automatically after a period of/i),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("OrderScreen receipt reset", () => {
+  const cachedOrder = () =>
+    queryClient.getQueryData(["orders", "detail", { id: completedOrder.id }]);
+
+  beforeEach(() => {
+    fetchMock.install();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    fetchMock.restore();
+    queryClient.clear();
+  });
+
+  it("greets the customer by first name without showing their email", async () => {
+    renderScreen(completedOrder);
+
+    await waitFor(() => {
+      expect(screen.getByText("Thanks, Pedro!")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText(completedOrder.customerEmail, { exact: false }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("returns to the menu and drops the cached order when Done is tapped", async () => {
+    const user = userEvent.setup();
+    renderScreen(completedOrder);
+
+    const doneButton = await screen.findByRole("button", { name: /^Done/ });
+    const fetchesBefore = fetchMock.requests.length;
+
+    await user.click(doneButton);
+
+    expect(screen.getByText("Menu screen")).toBeInTheDocument();
+    expect(cachedOrder()).toBeUndefined();
+    expect(fetchMock.requests).toHaveLength(fetchesBefore);
+  });
+
+  it("resets to the menu on its own after the countdown", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderScreen(completedOrder);
+
+    expect(
+      await screen.findByRole("button", {
+        name: `Done (${RECEIPT_RESET_SECONDS})`,
+      }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(RECEIPT_RESET_SECONDS * 1000);
+    });
+
+    expect(screen.getByText("Menu screen")).toBeInTheDocument();
+    expect(cachedOrder()).toBeUndefined();
+  });
+
+  it("does not auto-reset a pending order", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderScreen(pendingOrder);
+
+    await screen.findByRole("button", { name: "Back to menu" });
+
+    await act(async () => {
+      vi.advanceTimersByTime(RECEIPT_RESET_SECONDS * 1000);
+    });
+
+    expect(screen.queryByText("Menu screen")).not.toBeInTheDocument();
   });
 });

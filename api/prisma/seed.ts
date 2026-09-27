@@ -2,6 +2,7 @@ import { prisma } from "../src/shared/prisma";
 
 const DEFAULT_STOCK_QUANTITY = 10;
 const OUT_OF_STOCK_SLUGS = ["chocolate-brownie"];
+const RESET_STOCK = process.argv.includes("--reset-stock");
 
 type CategorySeed = {
   name: string;
@@ -175,7 +176,7 @@ const run = async () => {
       await prisma.inventory.upsert({
         where: { productId: createdProduct.id },
         create: { productId: createdProduct.id, quantity },
-        update: { quantity },
+        update: RESET_STOCK ? { quantity } : {},
       });
     }
   }

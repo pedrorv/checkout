@@ -159,7 +159,7 @@ export function PayDialog({ order, open, onOpenChange }: PayDialogProps) {
         onSuccess: (completed) => {
           clearActiveOrder();
           onOpenChange(false);
-          navigate(`/orders/${completed.id}`);
+          navigate(`/orders/${completed.id}`, { replace: true });
         },
         onError: (error) => toast.error(getOrderErrorMessage(error, "card")),
       },

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -14,10 +15,12 @@ import {
 } from "@/shared";
 
 import { useCancelOrder } from "../hooks/useCancelOrder.mutation";
-import { useGetOrder } from "../hooks/useGetOrder.query";
+import { getUseGetOrderKey, useGetOrder } from "../hooks/useGetOrder.query";
 import { getOrderErrorMessage } from "../orders.errors";
 import { useOrderStore } from "../orders.store";
 import type { OrderStatus } from "../orders.types";
+
+export const RECEIPT_RESET_SECONDS = 15;
 
 const statusVariantByStatus: Record<
   OrderStatus,
@@ -34,9 +37,41 @@ export function OrderScreen() {
   const cancelOrder = useCancelOrder();
   const activeOrderId = useOrderStore((state) => state.activeOrderId);
   const clearActiveOrder = useOrderStore((state) => state.clear);
+  const clearIfActive = useOrderStore((state) => state.clearIfActive);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(RECEIPT_RESET_SECONDS);
 
   const data = order.data;
+  const completed = data?.status === "completed";
+
+  const handleDone = useCallback(() => {
+    navigate("/", { replace: true });
+
+    if (id) {
+      clearIfActive({ id });
+      queryClient.removeQueries({ queryKey: getUseGetOrderKey({ id }) });
+    }
+  }, [id, navigate, clearIfActive, queryClient]);
+
+  useEffect(() => {
+    if (!completed) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setSecondsLeft((seconds) => Math.max(seconds - 1, 0));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [completed]);
+
+  useEffect(() => {
+    if (completed && secondsLeft === 0) {
+      handleDone();
+    }
+  }, [completed, secondsLeft, handleDone]);
 
   const handleCancel = () => {
     if (!data) {
@@ -67,9 +102,7 @@ export function OrderScreen() {
         ) : order.isError || !data ? (
           <div className="flex flex-col items-center gap-4 py-24">
             <h1 className="text-2xl font-bold">Order not found</h1>
-            <Button asChild>
-              <Link to="/">Go to menu</Link>
-            </Button>
+            <Button onClick={handleDone}>Go to menu</Button>
           </div>
         ) : (
           <Card>
@@ -87,6 +120,9 @@ export function OrderScreen() {
                   </Badge>
                 )}
               </div>
+              {data.status === "completed" && data.customerName && (
+                <p className="font-medium">Thanks, {data.customerName}!</p>
+              )}
               {data.status === "completed" && (
                 <p className="text-muted-foreground text-sm">
                   Paid with card ending in {data.cardLast4}
@@ -104,10 +140,6 @@ export function OrderScreen() {
             </div>
 
             <div className="flex flex-col gap-4 p-6">
-              <p className="text-muted-foreground text-sm">
-                Customer: {data.customerName || "—"} (
-                {data.customerEmail || "no email"})
-              </p>
               <ul className="divide-y divide-border rounded-md border border-border">
                 {data.items.map((item) => (
                   <li
@@ -139,8 +171,8 @@ export function OrderScreen() {
                     Cancel order
                   </Button>
                 )}
-                <Button asChild>
-                  <Link to="/">Back to menu</Link>
+                <Button className="flex-1" onClick={handleDone}>
+                  {completed ? `Done (${secondsLeft})` : "Back to menu"}
                 </Button>
               </div>
             </div>

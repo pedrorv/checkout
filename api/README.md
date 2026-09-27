@@ -80,7 +80,7 @@ make migrate-dev
 make migrate-deploy
 ```
 
-To seed the dev database with the snack bar menu:
+`make up` seeds the menu automatically (without touching existing stock). To re-seed and reset stock to the seeded quantities:
 
 ```bash
 make seed
